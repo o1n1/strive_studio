@@ -642,22 +642,22 @@ export interface Database {
         Update: Partial<Omit<PlantillaEmail, 'id'>>
       }
     }
-    Views: {}
+    Views: Record<string, never>
     Functions: {
       es_admin: {
-        Args: {}
+        Args: Record<string, never>
         Returns: boolean
       }
       es_coach: {
-        Args: {}
+        Args: Record<string, never>
         Returns: boolean
       }
       es_staff: {
-        Args: {}
+        Args: Record<string, never>
         Returns: boolean
       }
       es_cliente: {
-        Args: {}
+        Args: Record<string, never>
         Returns: boolean
       }
     }

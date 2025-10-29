@@ -54,9 +54,10 @@ export default function LoginPage() {
           router.refresh()
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error al iniciar sesión:', err)
-      setError(err.message || 'Error al iniciar sesión. Verifica tus credenciales.')
+      const errorMessage = err instanceof Error ? err.message : 'Error al iniciar sesión. Verifica tus credenciales.'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }

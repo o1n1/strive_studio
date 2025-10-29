@@ -13,7 +13,7 @@ import type { Database } from '@/lib/types/database.types'
  */
 export async function middleware(request: NextRequest) {
   // Actualizar sesión de Supabase
-  let response = await updateSession(request)
+  const response = await updateSession(request)
 
   // Crear cliente de Supabase para verificar autenticación
   const supabase = createServerClient<Database>(

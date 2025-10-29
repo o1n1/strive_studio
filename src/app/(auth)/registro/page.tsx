@@ -112,9 +112,10 @@ export default function RegistroPage() {
         alert('¡Registro exitoso! Por favor, revisa tu correo para confirmar tu cuenta.')
         router.push('/login')
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error en registro:', err)
-      setError(err.message || 'Error al registrar. Intenta de nuevo.')
+      const errorMessage = err instanceof Error ? err.message : 'Error al registrar. Intenta de nuevo.'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
