@@ -71,41 +71,47 @@ export default function RegistroPage() {
       }
 
       if (authData.user) {
-        // 2. Crear/actualizar perfil (usando upsert para evitar conflictos)
-        const { error: profileError } = await supabase.from('profiles').upsert({
-          id: authData.user.id,
-          email: formData.email,
-          nombre_completo: formData.nombreCompleto,
-          telefono: formData.telefono,
-          rol: 'cliente',
-          activo: true,
-          onboarding_completo: false,
-          terminos_aceptados_at: new Date().toISOString(),
-        }, {
-          onConflict: 'id'
-        })
+        // 2. Crear/actualizar perfil (upsert evita conflictos con triggers)
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert(
+            {
+              id: authData.user.id,
+              email: formData.email,
+              nombre_completo: formData.nombreCompleto,
+              telefono: formData.telefono,
+              rol: 'cliente',
+              activo: true,
+              onboarding_completo: false,
+              terminos_aceptados_at: new Date().toISOString(),
+            },
+            { onConflict: 'id' }
+          )
 
         if (profileError) {
           console.error('Error al crear perfil:', profileError)
           throw new Error('Error al crear el perfil de usuario')
         }
 
-        // 3. Crear/actualizar registro de cliente (usando upsert)
-        const { error: clienteError } = await supabase.from('clientes').upsert({
-          id: authData.user.id,
-          creditos_disponibles: 0,
-          puntos_lealtad: 0,
-          nivel_lealtad: 'bronze',
-          total_clases_asistidas: 0,
-          total_no_shows: 0,
-          racha_asistencia: 0,
-          notificaciones_email: true,
-          notificaciones_push: true,
-          notificaciones_telegram: false,
-          deslinde_medico_firmado: false,
-        }, {
-          onConflict: 'id'
-        })
+        // 3. Crear/actualizar registro de cliente
+        const { error: clienteError } = await supabase
+          .from('clientes')
+          .upsert(
+            {
+              id: authData.user.id,
+              creditos_disponibles: 0,
+              puntos_lealtad: 0,
+              nivel_lealtad: 'bronze',
+              total_clases_asistidas: 0,
+              total_no_shows: 0,
+              racha_asistencia: 0,
+              notificaciones_email: true,
+              notificaciones_push: true,
+              notificaciones_telegram: false,
+              deslinde_medico_firmado: false,
+            },
+            { onConflict: 'id' }
+          )
 
         if (clienteError) {
           console.error('Error al crear cliente:', clienteError)
@@ -315,8 +321,3 @@ export default function RegistroPage() {
     </div>
   )
 }
-```
-
-**Ruta del archivo:**
-```
-src/app/(auth)/registro/page.tsx
