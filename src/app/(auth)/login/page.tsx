@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { createClient } from '@/lib/supabase/client'
-import { DASHBOARD_ROUTES, type RolUsuario, type Profile } from '@/lib/types/enums'
+import { DASHBOARD_ROUTES, type RolUsuario } from '@/lib/types/enums'
 
 export default function LoginPage() {
   const router = useRouter()
