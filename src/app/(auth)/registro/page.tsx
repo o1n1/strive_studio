@@ -109,6 +109,7 @@ export default function RegistroPage() {
               notificaciones_push: true,
               notificaciones_telegram: false,
               deslinde_medico_firmado: false,
+              disciplina_preferida: null, // Se define en onboarding
             },
             { onConflict: 'id' }
           )
