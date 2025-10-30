@@ -9,9 +9,7 @@ import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { SignaturePad } from '@/components/ui/SignaturePad'
 import { createClient } from '@/lib/supabase/client'
-
-// Tipos para disciplina
-type DisciplinaPreferida = 'cycling' | 'funcional' | 'ambos'
+import type { TipoDisciplina } from '@/lib/types/enums'
 
 export default function RegistroPage() {
   const router = useRouter()
@@ -25,7 +23,7 @@ export default function RegistroPage() {
     telefono: '',
     genero: '',
     fechaNacimiento: '',
-    disciplinaPreferida: 'cycling' as DisciplinaPreferida,
+    disciplinaPreferida: 'cycling' as TipoDisciplina,
     terminosAceptados: false,
   })
 

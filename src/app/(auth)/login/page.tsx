@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { createClient } from '@/lib/supabase/client'
+import { DASHBOARD_ROUTES, type RolUsuario, type Profile } from '@/lib/types/enums'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -39,19 +40,12 @@ export default function LoginPage() {
         .from('profiles')
         .select('rol')
         .eq('id', authData.user.id)
-        .single()
+        .single<{ rol: RolUsuario }>()
 
       if (profileError) throw profileError
 
       // 3. Redirigir según rol
-      const dashboardRoutes = {
-        admin: '/admin',
-        coach: '/coach',
-        staff: '/staff',
-        cliente: '/cliente',
-      }
-
-      router.push(dashboardRoutes[profile.rol] || '/cliente')
+      router.push(DASHBOARD_ROUTES[profile.rol])
     } catch (err) {
       console.error('Error en login:', err)
       setError(err instanceof Error ? err.message : 'Email o contraseña incorrectos')
