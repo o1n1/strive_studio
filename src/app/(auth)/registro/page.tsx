@@ -71,52 +71,64 @@ export default function RegistroPage() {
       }
 
       if (authData.user) {
-        // 2. Crear/actualizar perfil (upsert evita conflictos con triggers)
-        const { error: profileError } = await supabase
+        // 2. Verificar si el perfil ya existe (puede ser creado por trigger)
+        const { data: existingProfile } = await supabase
           .from('profiles')
-          .upsert(
-            {
-              id: authData.user.id,
-              email: formData.email,
-              nombre_completo: formData.nombreCompleto,
-              telefono: formData.telefono,
-              rol: 'cliente',
-              activo: true,
-              onboarding_completo: false,
-              terminos_aceptados_at: new Date().toISOString(),
-            },
-            { onConflict: 'id' }
-          )
+          .select('id')
+          .eq('id', authData.user.id)
+          .single()
 
-        if (profileError) {
-          console.error('Error al crear perfil:', profileError)
-          throw new Error('Error al crear el perfil de usuario')
+        if (!existingProfile) {
+          // Crear perfil solo si no existe
+          const { error: profileError } = await supabase.from('profiles').insert({
+            id: authData.user.id,
+            email: formData.email,
+            nombre_completo: formData.nombreCompleto,
+            telefono: formData.telefono,
+            rol: 'cliente',
+            activo: true,
+            onboarding_completo: false,
+            terminos_aceptados_at: new Date().toISOString(),
+          })
+
+          if (profileError) {
+            console.error('Error al crear perfil:', profileError)
+            throw new Error('Error al crear el perfil de usuario')
+          }
         }
 
-        // 3. Crear/actualizar registro de cliente
-        const { error: clienteError } = await supabase
+        // 3. Verificar si el cliente ya existe
+        const { data: existingCliente } = await supabase
           .from('clientes')
-          .upsert(
-            {
-              id: authData.user.id,
-              creditos_disponibles: 0,
-              puntos_lealtad: 0,
-              nivel_lealtad: 'bronze',
-              total_clases_asistidas: 0,
-              total_no_shows: 0,
-              racha_asistencia: 0,
-              notificaciones_email: true,
-              notificaciones_push: true,
-              notificaciones_telegram: false,
-              deslinde_medico_firmado: false,
-              disciplina_preferida: 'cycling', // Valor por defecto, se actualiza en onboarding
-            },
-            { onConflict: 'id' }
-          )
+          .select('id')
+          .eq('id', authData.user.id)
+          .single()
 
-        if (clienteError) {
-          console.error('Error al crear cliente:', clienteError)
-          throw new Error('Error al crear el registro de cliente')
+        if (!existingCliente) {
+          // Generar código de referido único
+          const codigoReferido = `STR${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+
+          // Crear cliente solo si no existe
+          const { error: clienteError } = await supabase.from('clientes').insert({
+            id: authData.user.id,
+            codigo_referido: codigoReferido,
+            creditos_disponibles: 0,
+            puntos_lealtad: 0,
+            nivel_lealtad: 'bronze',
+            total_clases_asistidas: 0,
+            total_no_shows: 0,
+            racha_asistencia: 0,
+            notificaciones_email: true,
+            notificaciones_push: true,
+            notificaciones_telegram: false,
+            deslinde_medico_firmado: false,
+            disciplina_preferida: 'cycling',
+          })
+
+          if (clienteError) {
+            console.error('Error al crear cliente:', clienteError)
+            throw new Error('Error al crear el registro de cliente')
+          }
         }
 
         // 4. Redirigir al login
@@ -125,7 +137,8 @@ export default function RegistroPage() {
       }
     } catch (err: unknown) {
       console.error('Error en registro:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Error al registrar. Intenta de nuevo.'
+      const errorMessage =
+        err instanceof Error ? err.message : 'Error al registrar. Intenta de nuevo.'
       setError(errorMessage)
     } finally {
       setLoading(false)
@@ -135,12 +148,8 @@ export default function RegistroPage() {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-[#1A1814] mb-2">
-          Crear Cuenta
-        </h2>
-        <p className="text-gray-600 text-sm">
-          Únete a STRIVE y empieza tu transformación
-        </p>
+        <h2 className="text-2xl font-bold text-[#1A1814] mb-2">Crear Cuenta</h2>
+        <p className="text-gray-600 text-sm">Únete a STRIVE y empieza tu transformación</p>
       </div>
 
       {error && (
