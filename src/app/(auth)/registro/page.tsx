@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Modal, ModalFooter } from '@/components/ui/Modal'
+import { Modal } from '@/components/ui/Modal'
 import { SignaturePad } from '@/components/ui/SignaturePad'
 import { createClient } from '@/lib/supabase/client'
 
@@ -99,7 +99,6 @@ export default function RegistroPage() {
     }
 
     if (name === 'password') {
-      const fuerza = calcularFuerzaPassword(value)
       setValidaciones({
         ...validaciones,
         password: {
@@ -204,9 +203,9 @@ export default function RegistroPage() {
 
       // 6. Redirigir al dashboard
       router.push('/cliente')
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error en registro:', err)
-      setError(err.message || 'Error al registrar usuario. Intenta nuevamente.')
+      setError(err instanceof Error ? err.message : 'Error al registrar usuario. Intenta nuevamente.')
     } finally {
       setCargando(false)
     }

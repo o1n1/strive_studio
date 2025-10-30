@@ -52,9 +52,9 @@ export default function LoginPage() {
       }
 
       router.push(dashboardRoutes[profile.rol] || '/cliente')
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error en login:', err)
-      setError(err.message || 'Email o contraseña incorrectos')
+      setError(err instanceof Error ? err.message : 'Email o contraseña incorrectos')
     } finally {
       setCargando(false)
     }

@@ -28,9 +28,9 @@ export default function RecuperarPasswordPage() {
       if (resetError) throw resetError
 
       setEnviado(true)
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error al enviar email:', err)
-      setError(err.message || 'Error al enviar el correo. Intenta nuevamente.')
+      setError(err instanceof Error ? err.message : 'Error al enviar el correo. Intenta nuevamente.')
     } finally {
       setCargando(false)
     }
