@@ -109,7 +109,7 @@ export default function RegistroPage() {
               notificaciones_push: true,
               notificaciones_telegram: false,
               deslinde_medico_firmado: false,
-              disciplina_preferida: null, // Se define en onboarding
+              disciplina_preferida: 'cycling', // Valor por defecto, se actualiza en onboarding
             },
             { onConflict: 'id' }
           )
