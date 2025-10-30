@@ -1,333 +1,379 @@
-// src/app/(auth)/registro/page.tsx
 'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { createClient } from '@/lib/supabase/client'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card } from '@/components/ui/card'
+
+type DisciplinaPreferida = 'cycling' | 'funcional' | 'ambos'
+
+interface DatosRegistro {
+  email: string
+  password: string
+  confirmPassword: string
+  nombreCompleto: string
+  telefono: string
+  fechaNacimiento: string
+  genero: 'masculino' | 'femenino' | 'otro' | 'prefiero_no_decir'
+  disciplinaPreferida: DisciplinaPreferida
+  terminosAceptados: boolean
+}
 
 export default function RegistroPage() {
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = createClientComponentClient()
 
-  const [formData, setFormData] = useState({
-    nombreCompleto: '',
+  const [cargando, setCargando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [datos, setDatos] = useState<DatosRegistro>({
     email: '',
-    telefono: '',
     password: '',
     confirmPassword: '',
+    nombreCompleto: '',
+    telefono: '',
+    fechaNacimiento: '',
+    genero: 'prefiero_no_decir',
+    disciplinaPreferida: 'ambos',
+    terminosAceptados: false
   })
 
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [aceptaTerminos, setAceptaTerminos] = useState(false)
+  const validarFormulario = (): string | null => {
+    if (!datos.email || !datos.password || !datos.nombreCompleto || !datos.telefono || !datos.fechaNacimiento) {
+      return 'Por favor completa todos los campos requeridos'
+    }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    })
+    if (datos.password.length < 6) {
+      return 'La contraseña debe tener al menos 6 caracteres'
+    }
+
+    if (datos.password !== datos.confirmPassword) {
+      return 'Las contraseñas no coinciden'
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(datos.email)) {
+      return 'Email inválido'
+    }
+
+    const telefonoRegex = /^[0-9]{10}$/
+    if (!telefonoRegex.test(datos.telefono.replace(/\s/g, ''))) {
+      return 'Teléfono debe tener 10 dígitos'
+    }
+
+    if (!datos.terminosAceptados) {
+      return 'Debes aceptar los términos y condiciones'
+    }
+
+    return null
   }
 
-  const handleRegistro = async (e: React.FormEvent) => {
+  const manejarRegistro = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
-    // Validaciones
-    if (formData.password !== formData.confirmPassword) {
-      setError('Las contraseñas no coinciden')
+    const errorValidacion = validarFormulario()
+    if (errorValidacion) {
+      setError(errorValidacion)
       return
     }
 
-    if (formData.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres')
-      return
-    }
-
-    if (!aceptaTerminos) {
-      setError('Debes aceptar los términos y condiciones')
-      return
-    }
-
-    setLoading(true)
+    setCargando(true)
 
     try {
-      // 1. Crear usuario en Supabase Auth
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
+      // 1. CREAR USUARIO EN AUTH
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: datos.email,
+        password: datos.password,
         options: {
           data: {
-            nombre_completo: formData.nombreCompleto,
-            telefono: formData.telefono,
+            nombre_completo: datos.nombreCompleto,
+            telefono: datos.telefono
           },
-        },
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
       })
 
-      if (signUpError) {
-        throw signUpError
-      }
+      if (authError) throw authError
+      if (!authData.user) throw new Error('No se pudo crear el usuario')
 
-      if (authData.user) {
-        // 2. Verificar si el perfil ya existe (puede ser creado por trigger)
-        const { data: existingProfile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', authData.user.id)
-          .single()
+      const userId = authData.user.id
 
-        if (!existingProfile) {
-          // Crear perfil solo si no existe
-          const { error: profileError } = await supabase.from('profiles').insert({
-            id: authData.user.id,
-            email: formData.email,
-            nombre_completo: formData.nombreCompleto,
-            telefono: formData.telefono,
+      // 2. CREAR/ACTUALIZAR PERFIL
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert(
+          {
+            id: userId,
+            email: datos.email,
+            nombre_completo: datos.nombreCompleto,
+            telefono: datos.telefono,
+            fecha_nacimiento: datos.fechaNacimiento,
+            genero: datos.genero,
             rol: 'cliente',
             activo: true,
-            onboarding_completo: false,
+            onboarding_completo: true,
             terminos_aceptados_at: new Date().toISOString(),
-          })
-
-          if (profileError) {
-            console.error('Error al crear perfil:', profileError)
-            throw new Error('Error al crear el perfil de usuario')
+            updated_at: new Date().toISOString()
+          },
+          { 
+            onConflict: 'id',
+            ignoreDuplicates: false 
           }
-        }
+        )
 
-        // 3. Verificar si el cliente ya existe
-        const { data: existingCliente } = await supabase
-          .from('clientes')
-          .select('id')
-          .eq('id', authData.user.id)
-          .single()
+      if (profileError) {
+        console.error('Error en profiles:', profileError)
+        throw new Error(`Error al crear perfil: ${profileError.message}`)
+      }
 
-        if (!existingCliente) {
-          // Generar código de referido único
-          const codigoReferido = `STR${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`
-
-          // Crear cliente solo si no existe
-          const { error: clienteError } = await supabase.from('clientes').insert({
-            id: authData.user.id,
-            codigo_referido: codigoReferido,
+      // 3. CREAR REGISTRO DE CLIENTE
+      // CRÍTICO: disciplina_preferida debe ser un valor ENUM válido
+      const { error: clienteError } = await supabase
+        .from('clientes')
+        .upsert(
+          {
+            id: userId,
+            disciplina_preferida: datos.disciplinaPreferida, // ENUM: 'cycling' | 'funcional' | 'ambos'
             creditos_disponibles: 0,
-            puntos_lealtad: 0,
             nivel_lealtad: 'bronze',
-            total_clases_asistidas: 0,
-            total_no_shows: 0,
-            racha_asistencia: 0,
             notificaciones_email: true,
             notificaciones_push: true,
             notificaciones_telegram: false,
+            total_clases_asistidas: 0,
+            total_no_shows: 0,
+            racha_asistencia: 0,
+            puntos_lealtad: 0,
+            total_referidos: 0,
+            creditos_por_referidos: 0,
+            creditos_congelados: false,
             deslinde_medico_firmado: false,
-            disciplina_preferida: 'cycling',
-          })
-
-          if (clienteError) {
-            console.error('Error al crear cliente:', clienteError)
-            throw new Error('Error al crear el registro de cliente')
+            condiciones_medicas: [],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          },
+          { 
+            onConflict: 'id',
+            ignoreDuplicates: false 
           }
-        }
+        )
 
-        // 4. Redirigir al login
-        alert('¡Registro exitoso! Por favor, revisa tu correo para confirmar tu cuenta.')
-        router.push('/login')
+      if (clienteError) {
+        console.error('Error en clientes:', clienteError)
+        throw new Error(`Error al crear registro de cliente: ${clienteError.message}`)
       }
-    } catch (err: unknown) {
+
+      // 4. GENERAR CÓDIGO DE REFERIDO ÚNICO
+      const codigoReferido = `${datos.nombreCompleto.split(' ')[0].toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+      
+      const { error: updateError } = await supabase
+        .from('clientes')
+        .update({ codigo_referido: codigoReferido })
+        .eq('id', userId)
+
+      if (updateError) {
+        console.warn('Error al actualizar código de referido:', updateError)
+        // No lanzar error, es un campo opcional
+      }
+
+      // ÉXITO: Redirigir al dashboard de cliente
+      router.push('/cliente/dashboard')
+
+    } catch (err: any) {
       console.error('Error en registro:', err)
-      const errorMessage =
-        err instanceof Error ? err.message : 'Error al registrar. Intenta de nuevo.'
-      setError(errorMessage)
+      setError(err.message || 'Error al registrar usuario. Intenta nuevamente.')
     } finally {
-      setLoading(false)
+      setCargando(false)
     }
   }
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-[#1A1814] mb-2">Crear Cuenta</h2>
-        <p className="text-gray-600 text-sm">Únete a STRIVE y empieza tu transformación</p>
-      </div>
-
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-600">{error}</p>
-        </div>
-      )}
-
-      <form onSubmit={handleRegistro} className="space-y-4">
-        <Input
-          type="text"
-          name="nombreCompleto"
-          label="Nombre Completo"
-          placeholder="Juan Pérez"
-          value={formData.nombreCompleto}
-          onChange={handleChange}
-          required
-          disabled={loading}
-          icon={
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-              />
-            </svg>
-          }
-        />
-
-        <Input
-          type="email"
-          name="email"
-          label="Correo Electrónico"
-          placeholder="tu@email.com"
-          value={formData.email}
-          onChange={handleChange}
-          required
-          disabled={loading}
-          icon={
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"
-              />
-            </svg>
-          }
-        />
-
-        <Input
-          type="tel"
-          name="telefono"
-          label="Teléfono"
-          placeholder="5512345678"
-          value={formData.telefono}
-          onChange={handleChange}
-          required
-          disabled={loading}
-          icon={
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-              />
-            </svg>
-          }
-        />
-
-        <Input
-          type="password"
-          name="password"
-          label="Contraseña"
-          placeholder="••••••••"
-          value={formData.password}
-          onChange={handleChange}
-          required
-          disabled={loading}
-          helperText="Mínimo 6 caracteres"
-          icon={
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              />
-            </svg>
-          }
-        />
-
-        <Input
-          type="password"
-          name="confirmPassword"
-          label="Confirmar Contraseña"
-          placeholder="••••••••"
-          value={formData.confirmPassword}
-          onChange={handleChange}
-          required
-          disabled={loading}
-          icon={
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              />
-            </svg>
-          }
-        />
-
-        <div className="flex items-start">
-          <input
-            type="checkbox"
-            id="terminos"
-            checked={aceptaTerminos}
-            onChange={(e) => setAceptaTerminos(e.target.checked)}
-            className="mt-1 rounded border-gray-300 text-[#AE3F21] focus:ring-[#AE3F21]"
-            disabled={loading}
-          />
-          <label htmlFor="terminos" className="ml-2 text-sm text-gray-600">
-            Acepto los{' '}
-            <Link href="/terminos" className="text-[#AE3F21] hover:underline">
-              términos y condiciones
-            </Link>{' '}
-            y la{' '}
-            <Link href="/privacidad" className="text-[#AE3F21] hover:underline">
-              política de privacidad
-            </Link>
-          </label>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
+      <Card className="w-full max-w-md p-8">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Únete a STRIVE STUDIO
+          </h1>
+          <p className="text-gray-600">
+            Crea tu cuenta y comienza tu transformación
+          </p>
         </div>
 
-        <Button
-          type="submit"
-          variant="primary"
-          size="lg"
-          loading={loading}
-          className="w-full"
-        >
-          Crear Cuenta
-        </Button>
-      </form>
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
 
-      <div className="mt-6 text-center text-sm text-gray-600">
-        ¿Ya tienes cuenta?{' '}
-        <Link href="/login" className="text-[#AE3F21] font-medium hover:underline">
-          Inicia sesión aquí
-        </Link>
-      </div>
+        <form onSubmit={manejarRegistro} className="space-y-4">
+          {/* EMAIL */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email *
+            </label>
+            <Input
+              type="email"
+              value={datos.email}
+              onChange={(e) => setDatos({ ...datos, email: e.target.value })}
+              placeholder="tu@email.com"
+              required
+              disabled={cargando}
+            />
+          </div>
+
+          {/* CONTRASEÑA */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Contraseña *
+            </label>
+            <Input
+              type="password"
+              value={datos.password}
+              onChange={(e) => setDatos({ ...datos, password: e.target.value })}
+              placeholder="Mínimo 6 caracteres"
+              required
+              disabled={cargando}
+            />
+          </div>
+
+          {/* CONFIRMAR CONTRASEÑA */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Confirmar Contraseña *
+            </label>
+            <Input
+              type="password"
+              value={datos.confirmPassword}
+              onChange={(e) => setDatos({ ...datos, confirmPassword: e.target.value })}
+              placeholder="Repite tu contraseña"
+              required
+              disabled={cargando}
+            />
+          </div>
+
+          {/* NOMBRE COMPLETO */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nombre Completo *
+            </label>
+            <Input
+              type="text"
+              value={datos.nombreCompleto}
+              onChange={(e) => setDatos({ ...datos, nombreCompleto: e.target.value })}
+              placeholder="Juan Pérez"
+              required
+              disabled={cargando}
+            />
+          </div>
+
+          {/* TELÉFONO */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Teléfono *
+            </label>
+            <Input
+              type="tel"
+              value={datos.telefono}
+              onChange={(e) => setDatos({ ...datos, telefono: e.target.value })}
+              placeholder="4771234567"
+              required
+              disabled={cargando}
+            />
+          </div>
+
+          {/* FECHA DE NACIMIENTO */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Fecha de Nacimiento *
+            </label>
+            <Input
+              type="date"
+              value={datos.fechaNacimiento}
+              onChange={(e) => setDatos({ ...datos, fechaNacimiento: e.target.value })}
+              required
+              disabled={cargando}
+            />
+          </div>
+
+          {/* GÉNERO */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Género *
+            </label>
+            <select
+              value={datos.genero}
+              onChange={(e) => setDatos({ ...datos, genero: e.target.value as any })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#AE3F21]"
+              required
+              disabled={cargando}
+            >
+              <option value="masculino">Masculino</option>
+              <option value="femenino">Femenino</option>
+              <option value="otro">Otro</option>
+              <option value="prefiero_no_decir">Prefiero no decir</option>
+            </select>
+          </div>
+
+          {/* DISCIPLINA PREFERIDA */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Disciplina Preferida *
+            </label>
+            <select
+              value={datos.disciplinaPreferida}
+              onChange={(e) => setDatos({ ...datos, disciplinaPreferida: e.target.value as DisciplinaPreferida })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#AE3F21]"
+              required
+              disabled={cargando}
+            >
+              <option value="cycling">Cycling</option>
+              <option value="funcional">Funcional</option>
+              <option value="ambos">Ambos</option>
+            </select>
+          </div>
+
+          {/* TÉRMINOS Y CONDICIONES */}
+          <div className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              checked={datos.terminosAceptados}
+              onChange={(e) => setDatos({ ...datos, terminosAceptados: e.target.checked })}
+              className="mt-1 h-4 w-4 text-[#AE3F21] focus:ring-[#AE3F21] border-gray-300 rounded"
+              required
+              disabled={cargando}
+            />
+            <label className="text-sm text-gray-600">
+              Acepto los{' '}
+              <Link href="/terminos" className="text-[#AE3F21] hover:underline">
+                términos y condiciones
+              </Link>{' '}
+              y la{' '}
+              <Link href="/privacidad" className="text-[#AE3F21] hover:underline">
+                política de privacidad
+              </Link>
+            </label>
+          </div>
+
+          {/* BOTÓN DE REGISTRO */}
+          <Button
+            type="submit"
+            disabled={cargando}
+            className="w-full bg-[#AE3F21] hover:bg-[#8E3219] text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {cargando ? 'Creando cuenta...' : 'Crear cuenta'}
+          </Button>
+        </form>
+
+        {/* LINK A LOGIN */}
+        <div className="mt-6 text-center text-sm text-gray-600">
+          ¿Ya tienes cuenta?{' '}
+          <Link href="/login" className="text-[#AE3F21] font-medium hover:underline">
+            Inicia sesión aquí
+          </Link>
+        </div>
+      </Card>
     </div>
   )
 }
