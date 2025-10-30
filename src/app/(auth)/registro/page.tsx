@@ -3,10 +3,10 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card } from '@/components/ui/card'
+import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Card } from '@/components/ui/Card'
 
 type DisciplinaPreferida = 'cycling' | 'funcional' | 'ambos'
 
@@ -24,7 +24,7 @@ interface DatosRegistro {
 
 export default function RegistroPage() {
   const router = useRouter()
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
 
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -130,13 +130,12 @@ export default function RegistroPage() {
       }
 
       // 3. CREAR REGISTRO DE CLIENTE
-      // CRÍTICO: disciplina_preferida debe ser un valor ENUM válido
       const { error: clienteError } = await supabase
         .from('clientes')
         .upsert(
           {
             id: userId,
-            disciplina_preferida: datos.disciplinaPreferida, // ENUM: 'cycling' | 'funcional' | 'ambos'
+            disciplina_preferida: datos.disciplinaPreferida,
             creditos_disponibles: 0,
             nivel_lealtad: 'bronze',
             notificaciones_email: true,
@@ -175,7 +174,6 @@ export default function RegistroPage() {
 
       if (updateError) {
         console.warn('Error al actualizar código de referido:', updateError)
-        // No lanzar error, es un campo opcional
       }
 
       // ÉXITO: Redirigir al dashboard de cliente
@@ -208,96 +206,65 @@ export default function RegistroPage() {
         )}
 
         <form onSubmit={manejarRegistro} className="space-y-4">
-          {/* EMAIL */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email *
-            </label>
-            <Input
-              type="email"
-              value={datos.email}
-              onChange={(e) => setDatos({ ...datos, email: e.target.value })}
-              placeholder="tu@email.com"
-              required
-              disabled={cargando}
-            />
-          </div>
+          <Input
+            label="Email *"
+            type="email"
+            value={datos.email}
+            onChange={(e) => setDatos({ ...datos, email: e.target.value })}
+            placeholder="tu@email.com"
+            required
+            disabled={cargando}
+          />
 
-          {/* CONTRASEÑA */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Contraseña *
-            </label>
-            <Input
-              type="password"
-              value={datos.password}
-              onChange={(e) => setDatos({ ...datos, password: e.target.value })}
-              placeholder="Mínimo 6 caracteres"
-              required
-              disabled={cargando}
-            />
-          </div>
+          <Input
+            label="Contraseña *"
+            type="password"
+            value={datos.password}
+            onChange={(e) => setDatos({ ...datos, password: e.target.value })}
+            placeholder="Mínimo 6 caracteres"
+            required
+            disabled={cargando}
+          />
 
-          {/* CONFIRMAR CONTRASEÑA */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Confirmar Contraseña *
-            </label>
-            <Input
-              type="password"
-              value={datos.confirmPassword}
-              onChange={(e) => setDatos({ ...datos, confirmPassword: e.target.value })}
-              placeholder="Repite tu contraseña"
-              required
-              disabled={cargando}
-            />
-          </div>
+          <Input
+            label="Confirmar Contraseña *"
+            type="password"
+            value={datos.confirmPassword}
+            onChange={(e) => setDatos({ ...datos, confirmPassword: e.target.value })}
+            placeholder="Repite tu contraseña"
+            required
+            disabled={cargando}
+          />
 
-          {/* NOMBRE COMPLETO */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nombre Completo *
-            </label>
-            <Input
-              type="text"
-              value={datos.nombreCompleto}
-              onChange={(e) => setDatos({ ...datos, nombreCompleto: e.target.value })}
-              placeholder="Juan Pérez"
-              required
-              disabled={cargando}
-            />
-          </div>
+          <Input
+            label="Nombre Completo *"
+            type="text"
+            value={datos.nombreCompleto}
+            onChange={(e) => setDatos({ ...datos, nombreCompleto: e.target.value })}
+            placeholder="Juan Pérez"
+            required
+            disabled={cargando}
+          />
 
-          {/* TELÉFONO */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Teléfono *
-            </label>
-            <Input
-              type="tel"
-              value={datos.telefono}
-              onChange={(e) => setDatos({ ...datos, telefono: e.target.value })}
-              placeholder="4771234567"
-              required
-              disabled={cargando}
-            />
-          </div>
+          <Input
+            label="Teléfono *"
+            type="tel"
+            value={datos.telefono}
+            onChange={(e) => setDatos({ ...datos, telefono: e.target.value })}
+            placeholder="4771234567"
+            required
+            disabled={cargando}
+          />
 
-          {/* FECHA DE NACIMIENTO */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Fecha de Nacimiento *
-            </label>
-            <Input
-              type="date"
-              value={datos.fechaNacimiento}
-              onChange={(e) => setDatos({ ...datos, fechaNacimiento: e.target.value })}
-              required
-              disabled={cargando}
-            />
-          </div>
+          <Input
+            label="Fecha de Nacimiento *"
+            type="date"
+            value={datos.fechaNacimiento}
+            onChange={(e) => setDatos({ ...datos, fechaNacimiento: e.target.value })}
+            required
+            disabled={cargando}
+          />
 
-          {/* GÉNERO */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Género *
@@ -316,7 +283,6 @@ export default function RegistroPage() {
             </select>
           </div>
 
-          {/* DISCIPLINA PREFERIDA */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Disciplina Preferida *
@@ -334,7 +300,6 @@ export default function RegistroPage() {
             </select>
           </div>
 
-          {/* TÉRMINOS Y CONDICIONES */}
           <div className="flex items-start gap-2">
             <input
               type="checkbox"
@@ -356,17 +321,17 @@ export default function RegistroPage() {
             </label>
           </div>
 
-          {/* BOTÓN DE REGISTRO */}
           <Button
             type="submit"
             disabled={cargando}
-            className="w-full bg-[#AE3F21] hover:bg-[#8E3219] text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            variant="primary"
+            size="lg"
+            className="w-full"
           >
             {cargando ? 'Creando cuenta...' : 'Crear cuenta'}
           </Button>
         </form>
 
-        {/* LINK A LOGIN */}
         <div className="mt-6 text-center text-sm text-gray-600">
           ¿Ya tienes cuenta?{' '}
           <Link href="/login" className="text-[#AE3F21] font-medium hover:underline">
