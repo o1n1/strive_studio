@@ -12,174 +12,197 @@ export default function LoginPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [datos, setDatos] = useState({
+    email: '',
+    password: '',
+  })
+
+  const [cargando, setCargando] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const manejarLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    setLoading(true)
+    setCargando(true)
 
     try {
-      // Intentar iniciar sesión
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      // 1. Autenticar usuario
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: datos.email,
+        password: datos.password,
       })
 
-      if (signInError) {
-        throw signInError
+      if (authError) throw authError
+
+      // 2. Obtener perfil para redirección por rol
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('rol')
+        .eq('id', authData.user.id)
+        .single()
+
+      if (profileError) throw profileError
+
+      // 3. Redirigir según rol
+      const dashboardRoutes = {
+        admin: '/admin',
+        coach: '/coach',
+        staff: '/staff',
+        cliente: '/cliente',
       }
 
-      if (data.user) {
-        // Obtener el perfil del usuario para redirigir según su rol
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('rol')
-          .eq('id', data.user.id)
-          .single()
-
-        if (profile) {
-          // Redirigir según el rol
-          const dashboardRoutes: Record<string, string> = {
-            admin: '/admin',
-            coach: '/coach',
-            staff: '/staff',
-            cliente: '/cliente',
-          }
-          const redirectUrl = dashboardRoutes[profile.rol] || '/cliente'
-          router.push(redirectUrl)
-          router.refresh()
-        }
-      }
-    } catch (err: unknown) {
-      console.error('Error al iniciar sesión:', err)
-      const errorMessage = err instanceof Error ? err.message : 'Error al iniciar sesión. Verifica tus credenciales.'
-      setError(errorMessage)
+      router.push(dashboardRoutes[profile.rol] || '/cliente')
+    } catch (err: any) {
+      console.error('Error en login:', err)
+      setError(err.message || 'Email o contraseña incorrectos')
     } finally {
-      setLoading(false)
+      setCargando(false)
     }
   }
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-[#1A1814] mb-2">
-          Iniciar Sesión
-        </h2>
-        <p className="text-gray-600 text-sm">
-          Ingresa tus credenciales para acceder
-        </p>
-      </div>
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+      {/* Fondo con gradiente animado */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#AE3F21]/10 via-[#9C7A5E]/10 to-[#1A1814]/10 animate-gradient"></div>
+      
+      {/* Círculos decorativos con blur */}
+      <div className="absolute top-20 left-10 w-72 h-72 bg-[#AE3F21]/20 rounded-full blur-3xl animate-float"></div>
+      <div className="absolute bottom-20 right-10 w-96 h-96 bg-[#9C7A5E]/20 rounded-full blur-3xl animate-float-delayed"></div>
 
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-600">{error}</p>
-        </div>
-      )}
+      {/* Card de login */}
+      <div className="relative z-10 w-full max-w-md mx-4 animate-scaleIn">
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 p-8">
+          {/* Logo y título */}
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-[#AE3F21] to-[#9C7A5E] bg-clip-text text-transparent mb-2">
+              STRIVE STUDIO
+            </h1>
+            <p className="text-gray-600">Inicia sesión en tu cuenta</p>
+          </div>
 
-      <form onSubmit={handleLogin} className="space-y-4">
-        <Input
-          type="email"
-          label="Correo Electrónico"
-          placeholder="tu@email.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          disabled={loading}
-          icon={
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"
-              />
-            </svg>
-          }
-        />
+          {/* Mensaje de error */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg animate-slideIn">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
 
-        <Input
-          type="password"
-          label="Contraseña"
-          placeholder="••••••••"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          disabled={loading}
-          icon={
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              />
-            </svg>
-          }
-        />
-
-        <div className="flex items-center justify-between text-sm">
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              className="rounded border-gray-300 text-[#AE3F21] focus:ring-[#AE3F21]"
+          {/* Formulario */}
+          <form onSubmit={manejarLogin} className="space-y-5">
+            <Input
+              label="Email"
+              type="email"
+              value={datos.email}
+              onChange={(e) => setDatos({ ...datos, email: e.target.value })}
+              placeholder="tu@email.com"
+              required
+              disabled={cargando}
+              className="transition-all duration-200 focus:scale-[1.02]"
             />
-            <span className="ml-2 text-gray-600">Recordarme</span>
-          </label>
-          <Link
-            href="/recuperar-password"
-            className="text-[#AE3F21] hover:underline"
-          >
-            ¿Olvidaste tu contraseña?
-          </Link>
+
+            <Input
+              label="Contraseña"
+              type="password"
+              value={datos.password}
+              onChange={(e) => setDatos({ ...datos, password: e.target.value })}
+              placeholder="••••••••"
+              required
+              disabled={cargando}
+              className="transition-all duration-200 focus:scale-[1.02]"
+            />
+
+            <div className="text-right">
+              <Link
+                href="/recuperar-password"
+                className="text-sm text-[#AE3F21] hover:text-[#8E3219] font-medium transition-colors"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={cargando}
+              className="w-full bg-gradient-to-r from-[#AE3F21] to-[#9C7A5E] hover:from-[#8E3219] hover:to-[#7d6248] text-white font-semibold py-3 rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
+            >
+              {cargando ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Iniciando sesión...
+                </span>
+              ) : (
+                'Iniciar Sesión'
+              )}
+            </Button>
+          </form>
+
+          {/* Línea divisora */}
+          <div className="my-6 flex items-center">
+            <div className="flex-1 border-t border-gray-300"></div>
+            <div className="px-4 text-sm text-gray-500">o</div>
+            <div className="flex-1 border-t border-gray-300"></div>
+          </div>
+
+          {/* Link a registro */}
+          <div className="text-center text-sm text-gray-600">
+            ¿No tienes cuenta?{' '}
+            <Link
+              href="/registro"
+              className="text-[#AE3F21] font-semibold hover:text-[#8E3219] transition-colors"
+            >
+              Regístrate aquí
+            </Link>
+          </div>
         </div>
-
-        <Button
-          type="submit"
-          variant="primary"
-          size="lg"
-          loading={loading}
-          className="w-full"
-        >
-          Iniciar Sesión
-        </Button>
-      </form>
-
-      <div className="mt-6 text-center text-sm text-gray-600">
-        ¿No tienes cuenta?{' '}
-        <Link href="/registro" className="text-[#AE3F21] font-medium hover:underline">
-          Regístrate aquí
-        </Link>
       </div>
 
-      {/* Línea divisora */}
-      <div className="mt-6 mb-6 flex items-center">
-        <div className="flex-1 border-t border-gray-300"></div>
-        <div className="px-4 text-sm text-gray-500">o</div>
-        <div className="flex-1 border-t border-gray-300"></div>
-      </div>
-
-      {/* Nota para desarrollo */}
-      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-xs text-blue-800">
-          <strong>Nota:</strong> Para crear la primera cuenta de administrador, 
-          regístrate normalmente y luego actualiza el campo <code>rol</code> en la 
-          tabla <code>profiles</code> de Supabase a <code>admin</code>.
-        </p>
-      </div>
+      <style jsx global>{`
+        @keyframes gradient {
+          0%, 100% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+        }
+        
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-20px); }
+        }
+        
+        @keyframes float-delayed {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-30px); }
+        }
+        
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-gradient {
+          background-size: 200% 200%;
+          animation: gradient 15s ease infinite;
+        }
+        
+        .animate-float {
+          animation: float 6s ease-in-out infinite;
+        }
+        
+        .animate-float-delayed {
+          animation: float-delayed 8s ease-in-out infinite;
+        }
+        
+        .animate-slideIn {
+          animation: slideIn 0.3s ease-out;
+        }
+      `}</style>
     </div>
   )
 }
