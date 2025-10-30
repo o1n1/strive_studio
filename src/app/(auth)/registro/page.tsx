@@ -71,16 +71,18 @@ export default function RegistroPage() {
       }
 
       if (authData.user) {
-        // 2. Crear perfil en la tabla profiles
-        const { error: profileError } = await supabase.from('profiles').insert({
+        // 2. Crear/actualizar perfil (usando upsert para evitar conflictos)
+        const { error: profileError } = await supabase.from('profiles').upsert({
           id: authData.user.id,
           email: formData.email,
           nombre_completo: formData.nombreCompleto,
           telefono: formData.telefono,
-          rol: 'cliente', // Por defecto todos se registran como clientes
+          rol: 'cliente',
           activo: true,
           onboarding_completo: false,
           terminos_aceptados_at: new Date().toISOString(),
+        }, {
+          onConflict: 'id'
         })
 
         if (profileError) {
@@ -88,8 +90,8 @@ export default function RegistroPage() {
           throw new Error('Error al crear el perfil de usuario')
         }
 
-        // 3. Crear registro en la tabla clientes
-        const { error: clienteError } = await supabase.from('clientes').insert({
+        // 3. Crear/actualizar registro de cliente (usando upsert)
+        const { error: clienteError } = await supabase.from('clientes').upsert({
           id: authData.user.id,
           creditos_disponibles: 0,
           puntos_lealtad: 0,
@@ -101,6 +103,8 @@ export default function RegistroPage() {
           notificaciones_push: true,
           notificaciones_telegram: false,
           deslinde_medico_firmado: false,
+        }, {
+          onConflict: 'id'
         })
 
         if (clienteError) {
@@ -108,7 +112,7 @@ export default function RegistroPage() {
           throw new Error('Error al crear el registro de cliente')
         }
 
-        // 4. Redirigir al login o al dashboard
+        // 4. Redirigir al login
         alert('¡Registro exitoso! Por favor, revisa tu correo para confirmar tu cuenta.')
         router.push('/login')
       }
@@ -311,3 +315,8 @@ export default function RegistroPage() {
     </div>
   )
 }
+```
+
+**Ruta del archivo:**
+```
+src/app/(auth)/registro/page.tsx
