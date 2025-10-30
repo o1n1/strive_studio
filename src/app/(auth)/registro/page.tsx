@@ -167,7 +167,7 @@ export default function RegistroPage() {
       }
 
       // ÉXITO: Redirigir al dashboard de cliente
-      router.push('/cliente/dashboard')
+      router.push('/cliente')
 
     } catch (err) {
       console.error('Error en registro:', err)
