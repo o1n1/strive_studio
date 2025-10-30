@@ -179,9 +179,9 @@ export default function RegistroPage() {
       // ÉXITO: Redirigir al dashboard de cliente
       router.push('/cliente/dashboard')
 
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error en registro:', err)
-      setError(err.message || 'Error al registrar usuario. Intenta nuevamente.')
+      setError(err instanceof Error ? err.message : 'Error al registrar usuario. Intenta nuevamente.')
     } finally {
       setCargando(false)
     }
@@ -271,7 +271,7 @@ export default function RegistroPage() {
             </label>
             <select
               value={datos.genero}
-              onChange={(e) => setDatos({ ...datos, genero: e.target.value as any })}
+              onChange={(e) => setDatos({ ...datos, genero: e.target.value as typeof datos.genero })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#AE3F21]"
               required
               disabled={cargando}
