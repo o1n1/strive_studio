@@ -129,12 +129,16 @@ export default function RegistroPage() {
         throw new Error(`Error al crear perfil: ${profileError.message}`)
       }
 
-      // 3. CREAR REGISTRO DE CLIENTE
+      // 3. GENERAR CÓDIGO DE REFERIDO ÚNICO (antes del insert)
+      const codigoReferido = `${datos.nombreCompleto.split(' ')[0].toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+
+      // 4. CREAR REGISTRO DE CLIENTE
       const { error: clienteError } = await supabase
         .from('clientes')
         .upsert(
           {
             id: userId,
+            codigo_referido: codigoReferido,
             disciplina_preferida: datos.disciplinaPreferida,
             creditos_disponibles: 0,
             nivel_lealtad: 'bronze',
@@ -149,9 +153,7 @@ export default function RegistroPage() {
             creditos_por_referidos: 0,
             creditos_congelados: false,
             deslinde_medico_firmado: false,
-            condiciones_medicas: [],
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            condiciones_medicas: []
           },
           { 
             onConflict: 'id',
@@ -162,18 +164,6 @@ export default function RegistroPage() {
       if (clienteError) {
         console.error('Error en clientes:', clienteError)
         throw new Error(`Error al crear registro de cliente: ${clienteError.message}`)
-      }
-
-      // 4. GENERAR CÓDIGO DE REFERIDO ÚNICO
-      const codigoReferido = `${datos.nombreCompleto.split(' ')[0].toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`
-      
-      const { error: updateError } = await supabase
-        .from('clientes')
-        .update({ codigo_referido: codigoReferido })
-        .eq('id', userId)
-
-      if (updateError) {
-        console.warn('Error al actualizar código de referido:', updateError)
       }
 
       // ÉXITO: Redirigir al dashboard de cliente
