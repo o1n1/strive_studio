@@ -52,7 +52,7 @@ export function useAsyncValidation<T>({
         setIsValid(result.isValid);
         setError(result.message || null);
       }
-    } catch (_err) {
+    } catch {
       if (!abortControllerRef.current.signal.aborted) {
         setIsValid(false);
         setError('Error al validar. Intenta de nuevo.');
