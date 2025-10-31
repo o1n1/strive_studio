@@ -20,7 +20,7 @@ interface UseMultiStepFormReturn<T> {
   handleSubmit: () => Promise<void>;
 }
 
-export function useMultiStepForm<T extends Record<string, any>>({
+export function useMultiStepForm<T extends Record<string, unknown>>({
   initialData,
   totalSteps,
   onSubmit,

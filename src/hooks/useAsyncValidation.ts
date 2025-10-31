@@ -37,7 +37,6 @@ export function useAsyncValidation<T>({
       return;
     }
 
-    // Cancelar validación anterior
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -53,7 +52,7 @@ export function useAsyncValidation<T>({
         setIsValid(result.isValid);
         setError(result.message || null);
       }
-    } catch (err) {
+    } catch (_err) {
       if (!abortControllerRef.current.signal.aborted) {
         setIsValid(false);
         setError('Error al validar. Intenta de nuevo.');
@@ -79,22 +78,18 @@ export function useAsyncValidation<T>({
       return;
     }
 
-    // Limpiar timer anterior
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
 
-    // Reset estado cuando value cambia
     setIsValid(null);
     setError(null);
 
-    // Si value está vacío, no validar
     if (!value || (typeof value === 'string' && value.trim() === '')) {
       setIsValidating(false);
       return;
     }
 
-    // Debounce la validación
     debounceTimerRef.current = setTimeout(() => {
       validate();
     }, debounceMs);

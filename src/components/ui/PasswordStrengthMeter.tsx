@@ -11,7 +11,7 @@ interface PasswordStrengthMeterProps {
 }
 
 interface StrengthConfig {
-  strength: number; // 0-5
+  strength: number;
   label: string;
   color: string;
   bgColor: string;
@@ -49,11 +49,9 @@ export default function PasswordStrengthMeter({
 }: PasswordStrengthMeterProps) {
   const strength = useMemo(() => calculatePasswordStrength(password), [password]);
   const config = getStrengthConfig(strength);
-  const percentage = (strength / 5) * 100;
 
   return (
     <div className={`w-full ${className}`}>
-      {/* Barra de progreso */}
       <div className="flex gap-1 mb-2">
         {[1, 2, 3, 4, 5].map((level) => (
           <motion.div
@@ -71,7 +69,6 @@ export default function PasswordStrengthMeter({
         ))}
       </div>
 
-      {/* Label y requerimientos */}
       {showLabel && password.length > 0 && (
         <div className="space-y-2">
           <p className={`text-sm font-medium ${config.color}`}>
