@@ -32,10 +32,12 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  // ====== RUTAS PÚBLICAS ======
+  // ====== RUTAS PÚBLICAS ====== (FIX: pathname exacto para '/')
   const rutasPublicas = ['/', '/login', '/registro', '/recuperar-password', '/verificar-email', '/email-confirmado']
-  if (rutasPublicas.some(ruta => pathname.startsWith(ruta))) {
-    if (user && !pathname.startsWith('/verificar-email') && !pathname.startsWith('/email-confirmado')) {
+  const esRutaPublica = pathname === '/' || rutasPublicas.slice(1).some(ruta => pathname.startsWith(ruta))
+
+  if (esRutaPublica) {
+    if (user && pathname !== '/verificar-email' && pathname !== '/email-confirmado') {
       const { data: profile } = await supabase
         .from('profiles')
         .select('rol')

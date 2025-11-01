@@ -46,12 +46,11 @@ export default function LoginPage() {
 
       if (profileError) throw profileError
 
-      // 3. Redirigir según rol
-      router.push(DASHBOARD_ROUTES[profile.rol])
+      // 3. FIX: Usar window.location.href para forzar recarga completa del servidor
+      window.location.href = DASHBOARD_ROUTES[profile.rol]
     } catch (err) {
       console.error('Error en login:', err)
       setError(err instanceof Error ? err.message : 'Email o contraseña incorrectos')
-    } finally {
       setCargando(false)
     }
   }
@@ -59,7 +58,6 @@ export default function LoginPage() {
   return (
     <AnimatedBackground>
       <div className="min-h-screen flex items-center justify-center px-4 py-12">
-        {/* Card glassmorphism premium */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -67,7 +65,6 @@ export default function LoginPage() {
           className="w-full max-w-md"
         >
           <div className="glassmorphism-premium rounded-3xl shadow-2xl border border-white/10 p-8 md:p-10">
-            {/* Logo con gradient animado */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -93,154 +90,93 @@ export default function LoginPage() {
               >
                 STRIVE
               </motion.h1>
-              <p className="text-white/70 text-sm">
+              <p className="text-white/60 text-sm font-light tracking-wide">
                 No limits, just power
               </p>
             </motion.div>
 
-            {/* Mensaje de error con shake animation */}
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl animate-shake"
-              >
-                <div className="flex items-start">
-                  <svg 
-                    className="w-5 h-5 text-red-400 mt-0.5 mr-3 flex-shrink-0" 
-                    fill="currentColor" 
-                    viewBox="0 0 20 20"
-                  >
-                    <path 
-                      fillRule="evenodd" 
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" 
-                      clipRule="evenodd" 
-                    />
-                  </svg>
-                  <p className="text-sm text-red-300 font-medium">{error}</p>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Formulario */}
-            <motion.form
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              onSubmit={manejarLogin}
-              className="space-y-5"
-            >
-              <Input
-                label="Email"
-                type="email"
-                value={datos.email}
-                onChange={(e) => setDatos({ ...datos, email: e.target.value })}
-                placeholder="tu@email.com"
-                required
-                disabled={cargando}
-                className="transition-all duration-300 focus:scale-[1.01]"
-              />
-
-              <Input
-                label="Contraseña"
-                type="password"
-                value={datos.password}
-                onChange={(e) => setDatos({ ...datos, password: e.target.value })}
-                placeholder="••••••••"
-                required
-                disabled={cargando}
-                className="transition-all duration-300 focus:scale-[1.01]"
-              />
-
-              <div className="text-right">
-                <Link
-                  href="/recuperar-password"
-                  className="text-sm text-[#FF6B35] hover:text-[#E84A27] font-medium transition-colors duration-200 hover:underline"
-                >
-                  ¿Olvidaste tu contraseña?
-                </Link>
+            <form onSubmit={manejarLogin} className="space-y-5">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-white/90 mb-2">
+                  Email
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={datos.email}
+                  onChange={(e) => setDatos({ ...datos, email: e.target.value })}
+                  placeholder="tu@email.com"
+                  required
+                  disabled={cargando}
+                  className="w-full"
+                />
               </div>
 
-              {/* Botón con efecto glow */}
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-white/90 mb-2">
+                  Contraseña
+                </label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={datos.password}
+                  onChange={(e) => setDatos({ ...datos, password: e.target.value })}
+                  placeholder="••••••••"
+                  required
+                  disabled={cargando}
+                  className="w-full"
+                />
+              </div>
+
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-sm text-red-400"
+                >
+                  {error}
+                </motion.div>
+              )}
+
               <Button
                 type="submit"
+                variant="primary"
+                size="lg"
                 disabled={cargando}
-                className="w-full relative overflow-hidden group"
-                style={{
-                  background: 'linear-gradient(135deg, #E84A27 0%, #FF6B35 100%)',
-                }}
+                className="w-full"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 -skew-x-12" />
-                
-                <span className="relative flex items-center justify-center text-white font-semibold py-3">
-                  {cargando ? (
-                    <>
-                      <svg 
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        fill="none" 
-                        viewBox="0 0 24 24"
-                      >
-                        <circle 
-                          className="opacity-25" 
-                          cx="12" 
-                          cy="12" 
-                          r="10" 
-                          stroke="currentColor" 
-                          strokeWidth="4"
-                        />
-                        <path 
-                          className="opacity-75" 
-                          fill="currentColor" 
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                      Iniciando sesión...
-                    </>
-                  ) : (
-                    <>
-                      Iniciar Sesión
-                      <svg 
-                        className="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform duration-200" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth={2} 
-                          d="M14 5l7 7m0 0l-7 7m7-7H3" 
-                        />
-                      </svg>
-                    </>
-                  )}
-                </span>
+                {cargando ? 'Iniciando sesión...' : 'Iniciar Sesión'}
               </Button>
-            </motion.form>
 
-            {/* Divisor */}
-            <div className="my-8 flex items-center">
-              <div className="flex-1 border-t border-white/10" />
-              <div className="px-4 text-sm text-white/50 font-medium">o</div>
-              <div className="flex-1 border-t border-white/10" />
-            </div>
+              <div className="space-y-3 pt-4">
+                <div className="text-center">
+                  <Link
+                    href="/recuperar-password"
+                    className="text-sm text-white/60 hover:text-white transition-colors"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </Link>
+                </div>
 
-            {/* Link a registro */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              className="text-center text-sm"
-            >
-              <span className="text-white/60">¿No tienes cuenta? </span>
-              <Link
-                href="/registro"
-                className="text-[#FF6B35] font-semibold hover:text-[#E84A27] transition-colors duration-200 hover:underline"
-              >
-                Regístrate aquí
-              </Link>
-            </motion.div>
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-white/10"></div>
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-[#1A1814]/80 px-2 text-white/40">O</span>
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <Link
+                    href="/registro"
+                    className="text-sm text-white/60 hover:text-white transition-colors"
+                  >
+                    ¿No tienes cuenta? <span className="text-[#E84A27]">Regístrate</span>
+                  </Link>
+                </div>
+              </div>
+            </form>
           </div>
         </motion.div>
       </div>

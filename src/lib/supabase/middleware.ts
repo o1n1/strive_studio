@@ -3,12 +3,6 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { Database } from '@/lib/types/database.types'
 
-/**
- * Actualizar sesión de Supabase en el middleware
- * 
- * Necesario para mantener la sesión actualizada en las cookies
- * durante la navegación del usuario
- */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
     request: {
@@ -62,7 +56,6 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // Refrescar sesión si está expirada
   await supabase.auth.getUser()
 
   return response

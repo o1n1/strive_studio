@@ -16,7 +16,26 @@ import { createClient } from '@/lib/supabase/client'
 import { useMultiStepForm } from '@/hooks/useMultiStepForm'
 import type { TipoDisciplina } from '@/lib/types/enums'
 
-type RegistroFormData = Record<string, string | boolean | string[]>
+interface RegistroFormData extends Record<string, string | boolean> {
+  nombre: string
+  apellidoPaterno: string
+  apellidoMaterno: string
+  email: string
+  telefono: string
+  fechaNacimiento: string
+  genero: string
+  password: string
+  confirmPassword: string
+  disciplinaPreferida: string
+  horarioPreferido: string
+  fuenteAdquisicion: string
+  codigoReferido: string
+  condicionesMedicas: string
+  nombreEmergencia: string
+  telefonoEmergencia: string
+  relacionEmergencia: string
+  terminosAceptados: boolean
+}
 
 export default function RegistroPage() {
   const router = useRouter()
