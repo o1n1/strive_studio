@@ -3,8 +3,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import AnimatedBackground from '@/components/ui/AnimatedBackground'
 import { createClient } from '@/lib/supabase/client'
 
 export default function RecuperarPasswordPage() {
@@ -37,125 +39,181 @@ export default function RecuperarPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* Fondo con gradiente animado */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#AE3F21]/10 via-[#9C7A5E]/10 to-[#1A1814]/10 animate-gradient"></div>
-
-      {/* Círculos decorativos */}
-      <div className="absolute top-20 left-10 w-72 h-72 bg-[#AE3F21]/20 rounded-full blur-3xl animate-float"></div>
-      <div className="absolute bottom-20 right-10 w-96 h-96 bg-[#9C7A5E]/20 rounded-full blur-3xl animate-float-delayed"></div>
-
-      {/* Card */}
-      <div className="relative z-10 w-full max-w-md mx-4 animate-scaleIn">
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 p-8">
-          {!enviado ? (
-            <>
-              <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-[#AE3F21] to-[#9C7A5E] bg-clip-text text-transparent mb-2">
-                  Recuperar Contraseña
-                </h1>
-                <p className="text-gray-600">
-                  Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña
-                </p>
-              </div>
-
-              {error && (
-                <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg">
-                  <p className="text-sm text-red-600">{error}</p>
-                </div>
-              )}
-
-              <form onSubmit={manejarRecuperacion} className="space-y-5">
-                <Input
-                  label="Email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="tu@email.com"
-                  required
-                  disabled={cargando}
-                  className="transition-all duration-200 focus:scale-[1.02]"
-                />
-
-                <Button
-                  type="submit"
-                  disabled={cargando}
-                  className="w-full bg-gradient-to-r from-[#AE3F21] to-[#9C7A5E] hover:from-[#8E3219] hover:to-[#7d6248] text-white font-semibold py-3 rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-xl"
+    <AnimatedBackground>
+      <div className="min-h-screen flex items-center justify-center px-4 py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md"
+        >
+          <div className="glassmorphism-premium rounded-3xl shadow-2xl border border-white/10 p-8 md:p-10">
+            {!enviado ? (
+              <>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: 0.1 }}
+                  className="text-center mb-8"
                 >
-                  {cargando ? (
-                    <span className="flex items-center justify-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Enviando...
-                    </span>
-                  ) : (
-                    'Enviar Enlace'
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', delay: 0.2 }}
+                    className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-[#E84A27] to-[#FF6B35] rounded-full flex items-center justify-center"
+                  >
+                    <svg 
+                      className="w-10 h-10 text-white" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth={2} 
+                        d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" 
+                      />
+                    </svg>
+                  </motion.div>
+
+                  <motion.h1
+                    className="text-3xl md:text-4xl font-bold mb-3"
+                    style={{
+                      background: 'linear-gradient(135deg, #E84A27 0%, #FF6B35 50%, #FF006E 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                    }}
+                    animate={{
+                      backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+                    }}
+                    transition={{
+                      duration: 5,
+                      repeat: Infinity,
+                      ease: 'linear',
+                    }}
+                  >
+                    Recuperar Contraseña
+                  </motion.h1>
+                  <p className="text-white/60 text-sm">
+                    Ingresa tu email y te enviaremos un enlace
+                  </p>
+                </motion.div>
+
+                <form onSubmit={manejarRecuperacion} className="space-y-5">
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-white/90 mb-2">
+                      Email
+                    </label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="tu@email.com"
+                      required
+                      disabled={cargando}
+                      className="w-full"
+                    />
+                  </div>
+
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-sm text-red-400"
+                    >
+                      {error}
+                    </motion.div>
                   )}
-                </Button>
-              </form>
 
-              <div className="mt-6 text-center text-sm text-gray-600">
-                <Link href="/login" className="text-[#AE3F21] font-semibold hover:text-[#8E3219] transition-colors">
-                  Volver al inicio de sesión
-                </Link>
-              </div>
-            </>
-          ) : (
-            <div className="text-center">
-              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6">
-                <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="lg"
+                    disabled={cargando}
+                    className="w-full"
+                  >
+                    {cargando ? 'Enviando...' : 'Enviar Enlace de Recuperación'}
+                  </Button>
 
-              <h2 className="text-2xl font-bold text-gray-900 mb-3">¡Email Enviado!</h2>
-              <p className="text-gray-600 mb-6">
-                Hemos enviado un enlace de recuperación a <strong>{email}</strong>. 
-                Revisa tu bandeja de entrada y sigue las instrucciones.
-              </p>
-
-              <Link
-                href="/login"
-                className="inline-block w-full px-4 py-3 bg-gradient-to-r from-[#AE3F21] to-[#9C7A5E] text-white font-semibold rounded-xl hover:from-[#8E3219] hover:to-[#7d6248] transition-all duration-300 hover:scale-[1.02]"
+                  <div className="text-center pt-4">
+                    <Link
+                      href="/login"
+                      className="text-sm text-white/60 hover:text-white transition-colors"
+                    >
+                      Volver al inicio de sesión
+                    </Link>
+                  </div>
+                </form>
+              </>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className="text-center"
               >
-                Volver al Inicio de Sesión
-              </Link>
-            </div>
-          )}
-        </div>
-      </div>
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', delay: 0.2 }}
+                  className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-[#9D4EDD] to-[#FF006E] rounded-full flex items-center justify-center"
+                >
+                  <svg 
+                    className="w-10 h-10 text-white" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M5 13l4 4L19 7" 
+                    />
+                  </svg>
+                </motion.div>
 
-      <style jsx global>{`
-        @keyframes gradient {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-        }
-        
-        @keyframes float-delayed {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-30px); }
-        }
-        
-        .animate-gradient {
-          background-size: 200% 200%;
-          animation: gradient 15s ease infinite;
-        }
-        
-        .animate-float {
-          animation: float 6s ease-in-out infinite;
-        }
-        
-        .animate-float-delayed {
-          animation: float-delayed 8s ease-in-out infinite;
-        }
-      `}</style>
-    </div>
+                <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
+                  ¡Email Enviado!
+                </h2>
+                <p className="text-white/70 mb-6 text-sm md:text-base">
+                  Hemos enviado un enlace de recuperación a{' '}
+                  <span className="text-white font-semibold">{email}</span>.
+                  <br />
+                  Revisa tu bandeja de entrada y sigue las instrucciones.
+                </p>
+
+                <Link href="/login">
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    className="w-full"
+                  >
+                    Volver al Inicio de Sesión
+                  </Button>
+                </Link>
+
+                <p className="text-white/50 text-xs mt-6">
+                  ¿No recibiste el email? Revisa tu carpeta de spam
+                </p>
+              </motion.div>
+            )}
+          </div>
+
+          {/* Tagline */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+            className="text-center text-white/40 text-sm mt-8 tracking-wide"
+          >
+            No limits, just power
+          </motion.p>
+        </motion.div>
+      </div>
+    </AnimatedBackground>
   )
 }
