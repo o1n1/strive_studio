@@ -1,15 +1,21 @@
 // src/app/(auth)/login/page.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 import AnimatedBackground from '@/components/ui/AnimatedBackground'
 import { createClient } from '@/lib/supabase/client'
 import { DASHBOARD_ROUTES, type RolUsuario } from '@/lib/types/enums'
+
+const STORAGE_KEY = 'strive_remember_me'
+
+interface RememberedCredentials {
+  email: string
+  password: string
+}
 
 export default function LoginPage() {
   const router = useRouter()
@@ -20,8 +26,27 @@ export default function LoginPage() {
     password: '',
   })
 
+  const [recordarme, setRecordarme] = useState(false)
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [mostrarPassword, setMostrarPassword] = useState(false)
+
+  // Cargar credenciales guardadas al montar
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY)
+      if (saved) {
+        const credentials: RememberedCredentials = JSON.parse(saved)
+        setDatos({
+          email: credentials.email,
+          password: credentials.password,
+        })
+        setRecordarme(true)
+      }
+    } catch (error) {
+      console.error('Error cargando credenciales guardadas:', error)
+    }
+  }, [])
 
   const manejarLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,6 +54,19 @@ export default function LoginPage() {
     setCargando(true)
 
     try {
+      // Guardar o eliminar credenciales según checkbox
+      if (recordarme) {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            email: datos.email,
+            password: datos.password,
+          })
+        )
+      } else {
+        localStorage.removeItem(STORAGE_KEY)
+      }
+
       // 1. Autenticar usuario
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: datos.email,
@@ -46,98 +84,119 @@ export default function LoginPage() {
 
       if (profileError) throw profileError
 
-      // 3. FIX: Usar window.location.href para forzar recarga completa del servidor
+      // 3. Redirigir según rol
       window.location.href = DASHBOARD_ROUTES[profile.rol]
     } catch (err) {
       console.error('Error en login:', err)
-      setError(err instanceof Error ? err.message : 'Email o contraseña incorrectos')
+      setError(err instanceof Error ? err.message : 'Error al iniciar sesión')
       setCargando(false)
     }
   }
 
   return (
     <AnimatedBackground>
-      <div className="min-h-screen flex items-center justify-center px-4 py-12">
+      <div className="min-h-screen flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="w-full max-w-md"
         >
-          <div className="glassmorphism-premium rounded-3xl shadow-2xl border border-white/10 p-8 md:p-10">
+          {/* Card glassmorphism */}
+          <div className="relative backdrop-blur-xl bg-white/10 rounded-2xl p-8 shadow-2xl border border-white/20">
+            {/* Gradient border effect */}
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#E84A27]/20 via-transparent to-[#9D4EDD]/20 opacity-0 group-hover:opacity-100 transition-opacity -z-10" />
+
+            {/* Logo y título */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
               className="text-center mb-8"
             >
-              <motion.h1
-                className="text-5xl font-bold mb-3"
-                style={{
-                  background: 'linear-gradient(135deg, #E84A27 0%, #FF6B35 50%, #FF006E 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}
-                animate={{
-                  backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
-                }}
-                transition={{
-                  duration: 5,
-                  repeat: Infinity,
-                  ease: 'linear',
-                }}
-              >
+              <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-[#E84A27] via-[#FF6B35] to-[#FF006E] bg-clip-text text-transparent">
                 STRIVE
-              </motion.h1>
-              <p className="text-white/60 text-sm font-light tracking-wide">
+              </h1>
+              <p className="text-white/70 text-sm">
                 No limits, just power
               </p>
             </motion.div>
 
-            <form onSubmit={manejarLogin} className="space-y-5">
+            {/* Mensaje de error con shake animation */}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-200 text-sm"
+              >
+                {error}
+              </motion.div>
+            )}
+
+            {/* Formulario */}
+            <form onSubmit={manejarLogin} className="space-y-4">
+              {/* Email Input */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-white/90 mb-2">
-                  Email
-                </label>
-                <Input
-                  id="email"
+                <label className="block text-sm font-medium text-white/90 mb-1.5">Email</label>
+                <input
                   type="email"
                   value={datos.email}
                   onChange={(e) => setDatos({ ...datos, email: e.target.value })}
+                  disabled={cargando}
                   placeholder="tu@email.com"
+                  className="w-full px-4 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#FF6B35] transition-all disabled:opacity-50"
                   required
-                  disabled={cargando}
-                  className="w-full"
                 />
               </div>
 
+              {/* Password Input */}
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-white/90 mb-2">
-                  Contraseña
-                </label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={datos.password}
-                  onChange={(e) => setDatos({ ...datos, password: e.target.value })}
-                  placeholder="••••••••"
-                  required
-                  disabled={cargando}
-                  className="w-full"
-                />
+                <label className="block text-sm font-medium text-white/90 mb-1.5">Contraseña</label>
+                <div className="relative">
+                  <input
+                    type={mostrarPassword ? 'text' : 'password'}
+                    value={datos.password}
+                    onChange={(e) => setDatos({ ...datos, password: e.target.value })}
+                    disabled={cargando}
+                    placeholder="Tu contraseña"
+                    className="w-full px-4 py-2.5 pr-12 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#FF6B35] transition-all disabled:opacity-50"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setMostrarPassword(!mostrarPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition-colors"
+                    tabIndex={-1}
+                  >
+                    {mostrarPassword ? (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
 
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-sm text-red-400"
-                >
-                  {error}
-                </motion.div>
-              )}
+              {/* Checkbox Recuérdame */}
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="recordarme"
+                  checked={recordarme}
+                  onChange={(e) => setRecordarme(e.target.checked)}
+                  className="w-4 h-4 rounded border-white/20 bg-white/10 text-[#E84A27] focus:ring-[#FF6B35] focus:ring-offset-0"
+                />
+                <label htmlFor="recordarme" className="ml-2 text-sm text-white/70 cursor-pointer">
+                  Recuérdame en este dispositivo
+                </label>
+              </div>
 
+              {/* Botón Submit */}
               <Button
                 type="submit"
                 variant="primary"
@@ -148,6 +207,7 @@ export default function LoginPage() {
                 {cargando ? 'Iniciando sesión...' : 'Iniciar Sesión'}
               </Button>
 
+              {/* Links */}
               <div className="space-y-3 pt-4">
                 <div className="text-center">
                   <Link

@@ -168,56 +168,50 @@ export default function RegistroPage() {
   }
 
   const handleSubmit = async () => {
-    setCargando(true)
+    if (cargando) return
     setError(null)
+    setCargando(true)
 
     try {
-      // 1. Crear usuario
+      const nombreCompleto = `${formData.nombre} ${formData.apellidoPaterno} ${formData.apellidoMaterno}`
+
+      // 1. Crear usuario con metadata (trigger crea perfil automáticamente)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email as string,
         password: formData.password as string,
+        options: {
+          data: {
+            nombre_completo: nombreCompleto,
+            telefono: formData.telefono,
+            genero: formData.genero,
+            fecha_nacimiento: formData.fechaNacimiento,
+          }
+        }
       })
 
       if (authError) throw authError
       if (!authData.user) throw new Error('No se pudo crear el usuario')
 
       const userId = authData.user.id
-      const nombreCompleto = `${formData.nombre} ${formData.apellidoPaterno} ${formData.apellidoMaterno}`
 
-      // 2. Crear perfil
-      const { error: profileError } = await supabase.from('profiles').upsert({
-        id: userId,
-        email: formData.email as string,
-        nombre_completo: nombreCompleto,
-        telefono: formData.telefono as string,
-        genero: formData.genero as string,
-        fecha_nacimiento: formData.fechaNacimiento as string,
-        rol: 'cliente',
-        terminos_aceptados_at: new Date().toISOString(),
-        activo: true,
-        onboarding_completo: true,
-      })
-
-      if (profileError) throw profileError
-
-      // 3. Generar código de referido
+      // 2. Generar código de referido
       const codigoReferido = `${(formData.nombre as string).toUpperCase()}${Math.random()
         .toString(36)
         .substring(2, 6)
         .toUpperCase()}`
 
-      // 4. Procesar condiciones médicas
+      // 3. Procesar condiciones médicas
       const condicionesMedicasArray = (formData.condicionesMedicas as string)
         .split(',')
         .map(c => c.trim())
         .filter(c => c.length > 0)
 
-      // 5. Crear registro de cliente
-      const { error: clienteError } = await supabase.from('clientes').upsert({
+      // 4. Crear registro de cliente
+      const { error: clienteError } = await supabase.from('clientes').insert({
         id: userId,
         disciplina_preferida: formData.disciplinaPreferida as TipoDisciplina,
         horario_preferido: formData.horarioPreferido as string,
-        fuente_adquisicion: formData.fuenteAdquisicion as string, // NUEVO CAMPO
+        fuente_adquisicion: formData.fuenteAdquisicion as string,
         codigo_referido: codigoReferido,
         condiciones_medicas: condicionesMedicasArray.length > 0 ? condicionesMedicasArray : null,
         contacto_emergencia_nombre: formData.nombreEmergencia as string,
@@ -233,6 +227,9 @@ export default function RegistroPage() {
       })
 
       if (clienteError) throw clienteError
+
+      // 5. Ir a verificación de email
+      router.push('/verificar-email')
 
       // 6. Ir a pantalla de éxito
       goToNextStep()
