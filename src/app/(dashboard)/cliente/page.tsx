@@ -1,172 +1,123 @@
 // src/app/(dashboard)/cliente/page.tsx
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
-import Link from 'next/link'
+'use client'
+
+import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 
 export default function ClienteDashboard() {
   return (
-    <div>
+    <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#1A1814] mb-2">
           ¡Bienvenido a STRIVE!
         </h1>
         <p className="text-gray-600">
-          Tu viaje fitness comienza aquí
+          Tu transformación comienza aquí. Explora nuestras clases y reserva tu lugar.
         </p>
       </div>
 
-      {/* Créditos y Estado */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <p className="text-sm text-gray-600 mb-2">Créditos Disponibles</p>
-              <p className="text-5xl font-bold text-[#AE3F21]">8</p>
-              <p className="text-xs text-gray-500 mt-2">Expiran: 15 días</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <p className="text-sm text-gray-600 mb-2">Clases Completadas</p>
-              <p className="text-5xl font-bold text-[#AE3F21]">12</p>
-              <p className="text-xs text-gray-500 mt-2">Este mes</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <p className="text-sm text-gray-600 mb-2">Racha Actual</p>
-              <p className="text-5xl font-bold text-[#AE3F21]">5</p>
-              <p className="text-xs text-gray-500 mt-2">días 🔥</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Acciones Rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Reservar Clase</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Link href="/cliente/reservar">
-              <Button variant="primary" size="lg" className="w-full mb-4">
-                Ver Clases Disponibles
-              </Button>
-            </Link>
-            <div className="text-sm text-gray-600 space-y-2">
-              <p>🚴 Cycling de alto impacto</p>
-              <p>💪 Funcional para todo el cuerpo</p>
-              <p>📅 Elige tu horario preferido</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Comprar Paquete</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Link href="/cliente/paquetes">
-              <Button variant="secondary" size="lg" className="w-full mb-4">
-                Ver Paquetes
-              </Button>
-            </Link>
-            <div className="text-sm text-gray-600 space-y-2">
-              <p>💳 Diferentes opciones de créditos</p>
-              <p>🎁 Promociones especiales</p>
-              <p>⚡ Activación inmediata</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Mis Próximas Clases */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Mis Próximas Clases</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-[#AE3F21]/10 to-transparent rounded-lg border-l-4 border-[#AE3F21]">
-              <div>
-                <p className="font-semibold text-[#1A1814] mb-1">
-                  Cycling - Salón A
-                </p>
-                <p className="text-sm text-gray-600">
-                  Hoy, 18:00 - 18:50
-                </p>
-                <p className="text-sm text-gray-600">
-                  Coach: María González
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-medium text-[#AE3F21]">
-                  Bici #12
-                </p>
-                <Button variant="outline" size="sm" className="mt-2">
-                  Ver Detalles
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div>
-                <p className="font-semibold text-[#1A1814] mb-1">
-                  Funcional - Salón B
-                </p>
-                <p className="text-sm text-gray-600">
-                  Mañana, 07:00 - 07:50
-                </p>
-                <p className="text-sm text-gray-600">
-                  Coach: Carlos Ruiz
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-600">
-                  Tapete #5
-                </p>
-                <Button variant="ghost" size="sm" className="mt-2">
-                  Cancelar
-                </Button>
-              </div>
-            </div>
-
-            <div className="text-center py-4">
-              <Link
-                href="/cliente/reservas"
-                className="text-sm text-[#AE3F21] hover:underline"
-              >
-                Ver todas mis reservas →
-              </Link>
-            </div>
+      {/* Bienvenida */}
+      <Card padding="lg" shadow="md" className="mb-6">
+        <div className="text-center py-12">
+          <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-[#AE3F21] to-[#9C7A5E] rounded-full flex items-center justify-center">
+            <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
           </div>
-        </CardContent>
+          <h2 className="text-2xl font-bold text-[#1A1814] mb-3">
+            ¡Tu cuenta está lista!
+          </h2>
+          <p className="text-gray-600 mb-6 max-w-xl mx-auto">
+            Has verificado tu email exitosamente. Ahora puedes empezar a disfrutar de todas las funcionalidades de STRIVE.
+          </p>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#AE3F21]/10 text-[#AE3F21] rounded-lg">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-sm font-medium">
+              El módulo de reservas estará disponible próximamente
+            </span>
+          </div>
+        </div>
       </Card>
 
-      {/* Alertas y Notificaciones */}
-      <div className="mt-8">
-        <Card padding="md" shadow="sm">
-          <div className="flex items-start space-x-3">
-            <div className="text-2xl">💡</div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-[#1A1814] mb-1">
-                Consejo del día
-              </p>
-              <p className="text-sm text-gray-600">
-                Recuerda llegar 10 minutos antes de tu clase para hacer check-in 
-                y prepararte adecuadamente. ¡Aprovecha al máximo tu entrenamiento!
-              </p>
+      {/* Próximas funcionalidades */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card padding="lg" shadow="sm">
+          <CardHeader>
+            <div className="w-12 h-12 bg-[#AE3F21]/10 rounded-lg flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-[#AE3F21]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
             </div>
-          </div>
+            <h3 className="text-lg font-semibold text-[#1A1814]">
+              Reservar Clases
+            </h3>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600">
+              Explora nuestro calendario y reserva tus clases favoritas de cycling y funcional.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card padding="lg" shadow="sm">
+          <CardHeader>
+            <div className="w-12 h-12 bg-[#9C7A5E]/10 rounded-lg flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-[#9C7A5E]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-[#1A1814]">
+              Mi Perfil
+            </h3>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600">
+              Gestiona tu información personal, preferencias y configuración de cuenta.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card padding="lg" shadow="sm">
+          <CardHeader>
+            <div className="w-12 h-12 bg-[#B39A72]/10 rounded-lg flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-[#B39A72]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-[#1A1814]">
+              Mis Créditos
+            </h3>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600">
+              Consulta tu saldo de créditos, historial de compras y paquetes disponibles.
+            </p>
+          </CardContent>
         </Card>
       </div>
+
+      {/* Información de desarrollo */}
+      <Card padding="lg" shadow="sm" className="mt-6">
+        <div className="flex items-start gap-4">
+          <div className="text-3xl">🚧</div>
+          <div>
+            <h3 className="font-semibold text-[#1A1814] mb-2">
+              Desarrollo en Progreso - FASE 1 Completada
+            </h3>
+            <p className="text-sm text-gray-600 mb-3">
+              Has completado exitosamente el registro y verificación de email. 
+              Los módulos de reservas, paquetes y más funcionalidades se habilitarán en las siguientes fases.
+            </p>
+            <div className="text-sm text-gray-600 space-y-1">
+              <p>✅ Registro y autenticación completos</p>
+              <p>✅ Verificación de email activa</p>
+              <p>✅ Perfil de cliente creado</p>
+              <p>🔄 Siguiente: FASE 6 - Sistema de Reservas</p>
+            </div>
+          </div>
+        </div>
+      </Card>
     </div>
   )
 }

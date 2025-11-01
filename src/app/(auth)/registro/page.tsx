@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 import { Modal } from '@/components/ui/Modal'
 import { SignaturePad } from '@/components/ui/SignaturePad'
 import AnimatedBackground from '@/components/ui/AnimatedBackground'
@@ -17,32 +16,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useMultiStepForm } from '@/hooks/useMultiStepForm'
 import type { TipoDisciplina } from '@/lib/types/enums'
 
-// Interface compatible con Record<string, unknown>
 type RegistroFormData = Record<string, string | boolean | string[]>
-
-interface FormularioRegistro {
-  // Step 1: Información Básica
-  nombre: string
-  apellidoPaterno: string
-  apellidoMaterno: string
-  email: string
-  telefono: string
-  fechaNacimiento: string
-  genero: string
-  password: string
-  confirmPassword: string
-  // Step 2: Preferencias
-  disciplinaPreferida: string
-  horarioPreferido: string
-  codigoReferido: string
-  // Step 3: Información de Salud
-  condicionesMedicas: string
-  nombreEmergencia: string
-  telefonoEmergencia: string
-  relacionEmergencia: string
-  // Step 4: Términos
-  terminosAceptados: boolean
-}
 
 export default function RegistroPage() {
   const router = useRouter()
@@ -75,6 +49,7 @@ export default function RegistroPage() {
       confirmPassword: '',
       disciplinaPreferida: 'cycling',
       horarioPreferido: '',
+      fuenteAdquisicion: '', // NUEVO CAMPO
       codigoReferido: '',
       condicionesMedicas: '',
       nombreEmergencia: '',
@@ -131,6 +106,10 @@ export default function RegistroPage() {
   const validarStep2 = () => {
     if (!formData.horarioPreferido) {
       setError('Selecciona tu horario preferido')
+      return false
+    }
+    if (!formData.fuenteAdquisicion) {
+      setError('Selecciona cómo nos conociste')
       return false
     }
     return true
@@ -208,17 +187,18 @@ export default function RegistroPage() {
         .substring(2, 6)
         .toUpperCase()}`
 
-      // 4. Procesar condiciones médicas como array
+      // 4. Procesar condiciones médicas
       const condicionesMedicasArray = (formData.condicionesMedicas as string)
         .split(',')
         .map(c => c.trim())
         .filter(c => c.length > 0)
 
-      // 5. Crear registro de cliente (SOLO campos que existen en tabla)
+      // 5. Crear registro de cliente
       const { error: clienteError } = await supabase.from('clientes').upsert({
         id: userId,
         disciplina_preferida: formData.disciplinaPreferida as TipoDisciplina,
         horario_preferido: formData.horarioPreferido as string,
+        fuente_adquisicion: formData.fuenteAdquisicion as string, // NUEVO CAMPO
         codigo_referido: codigoReferido,
         condiciones_medicas: condicionesMedicasArray.length > 0 ? condicionesMedicasArray : null,
         contacto_emergencia_nombre: formData.nombreEmergencia as string,
@@ -238,10 +218,7 @@ export default function RegistroPage() {
       // 6. Ir a pantalla de éxito
       goToNextStep()
       
-      setTimeout(() => {
-        router.push('/cliente/reservas')
-      }, 3000)
-
+      // CAMBIO: No redirect automático, usuario controla
     } catch (err) {
       console.error('Error en registro:', err)
       setError(err instanceof Error ? err.message : 'Error al registrar')
@@ -253,7 +230,6 @@ export default function RegistroPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     
-    // Validación de teléfono: solo números
     if ((name === 'telefono' || name === 'telefonoEmergencia') && value.length > 0) {
       if (!/^\d*$/.test(value)) return
       if (value.length > 10) return
@@ -319,14 +295,12 @@ export default function RegistroPage() {
 
             {/* Multi-Step Form */}
             <MultiStepForm currentStep={currentStep}>
-              {/* STEP 1 */}
+              {/* STEP 1: Información Básica */}
               {currentStep === 1 && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-white/90 mb-1.5">
-                        Nombre *
-                      </label>
+                      <label className="block text-sm font-medium text-white/90 mb-1.5">Nombre *</label>
                       <input
                         name="nombre"
                         value={formData.nombre}
@@ -338,9 +312,7 @@ export default function RegistroPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-white/90 mb-1.5">
-                        Apellido Paterno *
-                      </label>
+                      <label className="block text-sm font-medium text-white/90 mb-1.5">Apellido Paterno *</label>
                       <input
                         name="apellidoPaterno"
                         value={formData.apellidoPaterno}
@@ -352,9 +324,7 @@ export default function RegistroPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-white/90 mb-1.5">
-                        Apellido Materno *
-                      </label>
+                      <label className="block text-sm font-medium text-white/90 mb-1.5">Apellido Materno *</label>
                       <input
                         name="apellidoMaterno"
                         value={formData.apellidoMaterno}
@@ -366,26 +336,22 @@ export default function RegistroPage() {
                     </div>
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-medium text-white/90 mb-1.5">Email *</label>
+                    <input
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="tu@email.com"
+                      disabled={cargando}
+                      className="w-full px-4 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                    />
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-white/90 mb-1.5">
-                        Email *
-                      </label>
-                      <input
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleChange}
-                        placeholder="tu@email.com"
-                        disabled={cargando}
-                        className="w-full px-4 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-white/90 mb-1.5">
-                        Teléfono * (10 dígitos)
-                      </label>
+                      <label className="block text-sm font-medium text-white/90 mb-1.5">Teléfono * (10 dígitos)</label>
                       <input
                         name="telefono"
                         type="tel"
@@ -396,17 +362,11 @@ export default function RegistroPage() {
                         maxLength={10}
                         className="w-full px-4 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
                       />
-                      <p className="text-xs text-white/50 mt-1">
-                        {(formData.telefono as string).length}/10
-                      </p>
+                      <p className="text-xs text-white/50 mt-1">{(formData.telefono as string).length}/10</p>
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-white/90 mb-1.5">
-                        Fecha de Nacimiento *
-                      </label>
+                      <label className="block text-sm font-medium text-white/90 mb-1.5">Fecha de Nacimiento *</label>
                       <input
                         name="fechaNacimiento"
                         type="date"
@@ -416,94 +376,91 @@ export default function RegistroPage() {
                         className="w-full px-4 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-white/90 mb-1.5">Género *</label>
+                    <select
+                      name="genero"
+                      value={formData.genero}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                      disabled={cargando}
+                    >
+                      <option value="" className="bg-[#1A1814] text-white">Selecciona...</option>
+                      <option value="masculino" className="bg-[#1A1814] text-white">Masculino</option>
+                      <option value="femenino" className="bg-[#1A1814] text-white">Femenino</option>
+                      <option value="otro" className="bg-[#1A1814] text-white">Otro</option>
+                      <option value="prefiero_no_decir" className="bg-[#1A1814] text-white">Prefiero no decir</option>
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-white/90 mb-1.5">Contraseña *</label>
+                      <input
+                        name="password"
+                        type="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        placeholder="Mínimo 8 caracteres"
+                        disabled={cargando}
+                        className="w-full px-4 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                      />
+                      <PasswordStrengthMeter password={formData.password as string} />
+                    </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-white/90 mb-1.5">
-                        Género *
-                      </label>
-                      <select
-                        name="genero"
-                        value={formData.genero}
+                      <label className="block text-sm font-medium text-white/90 mb-1.5">Confirmar Contraseña *</label>
+                      <input
+                        name="confirmPassword"
+                        type="password"
+                        value={formData.confirmPassword}
                         onChange={handleChange}
-                        className="w-full px-4 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                        placeholder="Repite tu contraseña"
                         disabled={cargando}
-                      >
-                        <option value="" className="bg-[#1A1814] text-white">Selecciona...</option>
-                        <option value="masculino" className="bg-[#1A1814] text-white">Masculino</option>
-                        <option value="femenino" className="bg-[#1A1814] text-white">Femenino</option>
-                        <option value="otro" className="bg-[#1A1814] text-white">Otro</option>
-                        <option value="prefiero_no_decir" className="bg-[#1A1814] text-white">Prefiero no decir</option>
-                      </select>
+                        className="w-full px-4 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                      />
                     </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-white/90 mb-1.5">
-                      Contraseña *
-                    </label>
-                    <input
-                      name="password"
-                      type="password"
-                      value={formData.password}
-                      onChange={handleChange}
-                      placeholder="Mínimo 8 caracteres"
-                      disabled={cargando}
-                      className="w-full px-4 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
-                    />
-                  </div>
-
-                  <PasswordStrengthMeter password={formData.password as string} showLabel />
-
-                  <div>
-                    <label className="block text-sm font-medium text-white/90 mb-1.5">
-                      Confirmar Contraseña *
-                    </label>
-                    <input
-                      name="confirmPassword"
-                      type="password"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      placeholder="Repite tu contraseña"
-                      disabled={cargando}
-                      className="w-full px-4 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
-                    />
                   </div>
                 </div>
               )}
 
-              {/* STEP 2 */}
+              {/* STEP 2: Preferencias */}
               {currentStep === 2 && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-white/90 mb-2">
+                    <label className="block text-sm font-medium text-white/90 mb-1.5">
                       ¿Qué disciplina te interesa? *
                     </label>
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { value: 'cycling', label: 'Cycling' },
-                        { value: 'funcional', label: 'Funcional' },
-                        { value: 'ambos', label: 'Ambos' }
-                      ].map((disc) => (
-                        <button
-                          key={disc.value}
-                          type="button"
-                          onClick={() => updateFormData({ disciplinaPreferida: disc.value })}
-                          className={`p-3 rounded-lg border-2 transition-all ${
-                            formData.disciplinaPreferida === disc.value
-                              ? 'border-[#FF6B35] bg-[#FF6B35]/20 text-white'
-                              : 'border-white/20 bg-white/5 text-white/70 hover:border-white/40'
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {['cycling', 'funcional', 'ambas'].map((disc) => (
+                        <label
+                          key={disc}
+                          className={`flex items-center justify-center p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                            formData.disciplinaPreferida === disc
+                              ? 'border-[#FF6B35] bg-[#FF6B35]/20'
+                              : 'border-white/20 bg-white/5 hover:border-white/40'
                           }`}
                         >
-                          {disc.label}
-                        </button>
+                          <input
+                            type="radio"
+                            name="disciplinaPreferida"
+                            value={disc}
+                            checked={formData.disciplinaPreferida === disc}
+                            onChange={handleChange}
+                            className="sr-only"
+                          />
+                          <span className="text-white font-medium capitalize">
+                            {disc === 'cycling' ? 'Cycling' : disc === 'funcional' ? 'Funcional' : 'Ambas'}
+                          </span>
+                        </label>
                       ))}
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-white/90 mb-1.5">
-                      Horario preferido *
-                    </label>
+                    <label className="block text-sm font-medium text-white/90 mb-1.5">Horario Preferido *</label>
                     <select
                       name="horarioPreferido"
                       value={formData.horarioPreferido}
@@ -512,73 +469,91 @@ export default function RegistroPage() {
                       disabled={cargando}
                     >
                       <option value="" className="bg-[#1A1814] text-white">Selecciona...</option>
-                      <option value="manana" className="bg-[#1A1814] text-white">Mañana (6-12)</option>
-                      <option value="tarde" className="bg-[#1A1814] text-white">Tarde (12-18)</option>
-                      <option value="noche" className="bg-[#1A1814] text-white">Noche (18-22)</option>
+                      <option value="manana" className="bg-[#1A1814] text-white">Mañana (6:00 - 12:00)</option>
+                      <option value="tarde" className="bg-[#1A1814] text-white">Tarde (12:00 - 18:00)</option>
+                      <option value="noche" className="bg-[#1A1814] text-white">Noche (18:00 - 22:00)</option>
+                    </select>
+                  </div>
+
+                  {/* NUEVO CAMPO: Cómo nos conociste */}
+                  <div>
+                    <label className="block text-sm font-medium text-white/90 mb-1.5">¿Cómo nos conociste? *</label>
+                    <select
+                      name="fuenteAdquisicion"
+                      value={formData.fuenteAdquisicion}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
+                      disabled={cargando}
+                    >
+                      <option value="" className="bg-[#1A1814] text-white">Selecciona...</option>
+                      <option value="redes_sociales" className="bg-[#1A1814] text-white">Redes Sociales (Instagram/Facebook)</option>
+                      <option value="google" className="bg-[#1A1814] text-white">Búsqueda en Google</option>
+                      <option value="recomendacion" className="bg-[#1A1814] text-white">Recomendación de amigo/familiar</option>
+                      <option value="anuncio" className="bg-[#1A1814] text-white">Anuncio/Publicidad</option>
+                      <option value="caminando" className="bg-[#1A1814] text-white">Pasaba por aquí</option>
+                      <option value="otro" className="bg-[#1A1814] text-white">Otro</option>
                     </select>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-white/90 mb-1.5">
-                      Código de referido (opcional)
+                      Código de Referido (opcional)
                     </label>
                     <input
                       name="codigoReferido"
                       value={formData.codigoReferido}
                       onChange={handleChange}
-                      placeholder="Código de referido"
+                      placeholder="JUAN1234"
                       disabled={cargando}
                       className="w-full px-4 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
                     />
+                    <p className="text-xs text-white/50 mt-1">Si alguien te recomendó, ingresa su código</p>
                   </div>
                 </div>
               )}
 
-              {/* STEP 3 */}
+              {/* STEP 3: Salud */}
               {currentStep === 3 && (
                 <div className="space-y-4">
-                  <p className="text-white/70 text-sm mb-4">
-                    Esta información nos ayuda a brindarte un mejor servicio y garantizar tu seguridad.
-                  </p>
+                  <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/30 mb-4">
+                    <p className="text-sm text-white/80">
+                      💡 Esta información nos ayuda a brindarte un mejor servicio y garantizar tu seguridad.
+                    </p>
+                  </div>
 
                   <div>
                     <label className="block text-sm font-medium text-white/90 mb-1.5">
-                      ¿Tienes condiciones médicas a considerar?
+                      ¿Tienes condiciones médicas a considerar? (opcional)
                     </label>
                     <textarea
                       name="condicionesMedicas"
                       value={formData.condicionesMedicas}
                       onChange={handleChange}
-                      placeholder="Diabetes, hipertensión, asma (separadas por comas)"
+                      placeholder="Diabetes, hipertensión, asma, etc."
+                      disabled={cargando}
                       rows={3}
                       className="w-full px-4 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
-                      disabled={cargando}
                     />
-                    <p className="text-xs text-white/50 mt-1">Separa por comas si son varias</p>
                   </div>
 
-                  <div className="border-t border-white/10 pt-4 mt-6">
-                    <h3 className="text-white font-semibold mb-4">Contacto de Emergencia *</h3>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-white/90 mb-1.5">
-                        Nombre completo *
-                      </label>
+                  <div className="mt-6">
+                    <h3 className="text-white font-semibold mb-3">Contacto de Emergencia</h3>
+
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-white/90 mb-1.5">Nombre Completo *</label>
                       <input
                         name="nombreEmergencia"
                         value={formData.nombreEmergencia}
                         onChange={handleChange}
-                        placeholder="Nombre del contacto"
+                        placeholder="María García"
                         disabled={cargando}
                         className="w-full px-4 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-white/90 mb-1.5">
-                          Teléfono * (10 dígitos)
-                        </label>
+                        <label className="block text-sm font-medium text-white/90 mb-1.5">Teléfono * (10 dígitos)</label>
                         <input
                           name="telefonoEmergencia"
                           type="tel"
@@ -589,15 +564,11 @@ export default function RegistroPage() {
                           maxLength={10}
                           className="w-full px-4 py-2.5 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#FF6B35]"
                         />
-                        <p className="text-xs text-white/50 mt-1">
-                          {(formData.telefonoEmergencia as string).length}/10
-                        </p>
+                        <p className="text-xs text-white/50 mt-1">{(formData.telefonoEmergencia as string).length}/10</p>
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-white/90 mb-1.5">
-                          Relación *
-                        </label>
+                        <label className="block text-sm font-medium text-white/90 mb-1.5">Relación *</label>
                         <select
                           name="relacionEmergencia"
                           value={formData.relacionEmergencia}
@@ -617,7 +588,7 @@ export default function RegistroPage() {
                 </div>
               )}
 
-              {/* STEP 4 */}
+              {/* STEP 4: Términos */}
               {currentStep === 4 && (
                 <div className="space-y-4">
                   <p className="text-white/90 text-sm mb-6">
@@ -626,142 +597,104 @@ export default function RegistroPage() {
 
                   <div className="p-4 bg-white/5 rounded-lg border border-white/10">
                     <h3 className="text-white font-semibold mb-2">1. Términos y Condiciones</h3>
-                    <p className="text-white/70 text-sm mb-3">
-                      Al utilizar STRIVE STUDIO aceptas nuestros términos de servicio.
-                    </p>
-                    {firmaTerminos ? (
-                      <div className="flex items-center text-green-400 text-sm">
-                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        Firmado ✓
-                      </div>
-                    ) : (
-                      <Button
-                        type="button"
-                        onClick={() => setMostrarTerminos(true)}
-                        className="text-sm"
-                        style={{ background: 'linear-gradient(135deg, #E84A27 0%, #FF6B35 100%)' }}
-                      >
-                        Leer y Firmar
-                      </Button>
-                    )}
+                    <p className="text-sm text-white/70 mb-3">Condiciones generales de uso del servicio</p>
+                    <Button onClick={() => setMostrarTerminos(true)} variant="outline" className="border-white/20 text-white hover:bg-white/10">
+                      {firmaTerminos ? '✓ Firmado' : 'Firmar'}
+                    </Button>
                   </div>
 
                   <div className="p-4 bg-white/5 rounded-lg border border-white/10">
                     <h3 className="text-white font-semibold mb-2">2. Responsabilidad de Actividad Física</h3>
-                    <p className="text-white/70 text-sm mb-3">
-                      Confirmas que estás en condiciones físicas para realizar actividad física intensa.
-                    </p>
-                    {firmaDeslinde ? (
-                      <div className="flex items-center text-green-400 text-sm">
-                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        Firmado ✓
-                      </div>
-                    ) : (
-                      <Button
-                        type="button"
-                        onClick={() => setMostrarDeslinde(true)}
-                        className="text-sm"
-                        style={{ background: 'linear-gradient(135deg, #E84A27 0%, #FF6B35 100%)' }}
-                      >
-                        Leer y Firmar
-                      </Button>
-                    )}
+                    <p className="text-sm text-white/70 mb-3">Confirmo estar en condiciones para realizar actividad física</p>
+                    <Button onClick={() => setMostrarDeslinde(true)} variant="outline" className="border-white/20 text-white hover:bg-white/10">
+                      {firmaDeslinde ? '✓ Firmado' : 'Firmar'}
+                    </Button>
                   </div>
                 </div>
               )}
 
-              {/* STEP 5 */}
+              {/* STEP 5: Éxito */}
               {currentStep === 5 && (
                 <div className="text-center py-8">
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    transition={{ duration: 0.5, type: 'spring' }}
+                    transition={{ type: 'spring', delay: 0.2 }}
+                    className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center"
                   >
-                    <div className="text-6xl mb-6">🎉</div>
-                    <h2 className="text-3xl font-bold text-white mb-4">
-                      ¡Tu cuenta ha sido creada!
-                    </h2>
-                    <p className="text-white/70 mb-8">
-                      Estamos emocionados de tenerte en STRIVE
-                    </p>
-
-                    <div className="space-y-3 text-left max-w-md mx-auto mb-8">
-                      {['Reserva clases fácilmente', 'Consulta tu historial', 'Recibe notificaciones'].map((item, i) => (
-                        <div key={i} className="flex items-center text-white/80">
-                          <svg className="w-5 h-5 mr-3 text-[#FF6B35]" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                          </svg>
-                          {item}
-                        </div>
-                      ))}
-                    </div>
-
-                    <p className="text-white/50 text-sm">Redirigiendo en 3 segundos...</p>
+                    <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
                   </motion.div>
+
+                  <h2 className="text-3xl font-bold text-white mb-3">¡Cuenta Creada!</h2>
+                  <p className="text-white/70 mb-8">
+                    Tu cuenta ha sido creada exitosamente. Ahora necesitas verificar tu email para continuar.
+                  </p>
+
+                  <Button
+                    onClick={() => router.push('/verificar-email')}
+                    style={{ background: 'linear-gradient(135deg, #E84A27 0%, #FF6B35 100%)' }}
+                    className="min-w-[200px]"
+                  >
+                    Verificar Email
+                  </Button>
+                </div>
+              )}
+
+              {/* Botones de navegación */}
+              {currentStep < 5 && (
+                <div className="flex gap-4 mt-8">
+                  {!isFirstStep && (
+                    <Button
+                      onClick={goToPreviousStep}
+                      variant="outline"
+                      disabled={cargando}
+                      className="flex-1 border-white/20 text-white hover:bg-white/10"
+                    >
+                      Anterior
+                    </Button>
+                  )}
+
+                  {currentStep < 4 && (
+                    <Button
+                      onClick={handleNext}
+                      disabled={cargando}
+                      className="flex-1"
+                      style={{ background: 'linear-gradient(135deg, #E84A27 0%, #FF6B35 100%)' }}
+                    >
+                      Siguiente
+                    </Button>
+                  )}
+
+                  {currentStep === 4 && (
+                    <Button
+                      type="button"
+                      onClick={handleSubmit}
+                      disabled={cargando}
+                      className="flex-1"
+                      style={{ background: 'linear-gradient(135deg, #E84A27 0%, #FF6B35 100%)' }}
+                    >
+                      {cargando ? 'Creando cuenta...' : 'Crear Cuenta'}
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {currentStep < 5 && (
+                <div className="mt-6 text-center text-sm">
+                  <span className="text-white/60">¿Ya tienes cuenta? </span>
+                  <Link href="/login" className="text-[#FF6B35] font-semibold hover:text-[#E84A27] transition-colors">
+                    Inicia sesión aquí
+                  </Link>
                 </div>
               )}
             </MultiStepForm>
-
-            {/* Botones */}
-            {currentStep < 5 && (
-              <div className="flex gap-4 mt-8">
-                {!isFirstStep && (
-                  <Button
-                    type="button"
-                    onClick={goToPreviousStep}
-                    disabled={cargando}
-                    className="flex-1"
-                    style={{ background: 'rgba(255, 255, 255, 0.1)' }}
-                  >
-                    Anterior
-                  </Button>
-                )}
-
-                {currentStep < 4 && (
-                  <Button
-                    type="button"
-                    onClick={handleNext}
-                    disabled={cargando}
-                    className="flex-1"
-                    style={{ background: 'linear-gradient(135deg, #E84A27 0%, #FF6B35 100%)' }}
-                  >
-                    Siguiente
-                  </Button>
-                )}
-
-                {currentStep === 4 && (
-                  <Button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={cargando}
-                    className="flex-1"
-                    style={{ background: 'linear-gradient(135deg, #E84A27 0%, #FF6B35 100%)' }}
-                  >
-                    {cargando ? 'Creando cuenta...' : 'Crear Cuenta'}
-                  </Button>
-                )}
-              </div>
-            )}
-
-            {/* Link login */}
-            {currentStep < 5 && (
-              <div className="mt-6 text-center text-sm">
-                <span className="text-white/60">¿Ya tienes cuenta? </span>
-                <Link href="/login" className="text-[#FF6B35] font-semibold hover:text-[#E84A27] transition-colors">
-                  Inicia sesión aquí
-                </Link>
-              </div>
-            )}
           </div>
         </motion.div>
       </div>
 
-      {/* Modales */}
+      {/* Modales de firmas */}
       <Modal isOpen={mostrarTerminos} onClose={() => setMostrarTerminos(false)} title="Términos y Condiciones" size="lg">
         <div className="space-y-4 max-h-96 overflow-y-auto pr-2 mb-6">
           <p>Al utilizar STRIVE STUDIO, aceptas los siguientes términos...</p>
